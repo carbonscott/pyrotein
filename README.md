@@ -28,7 +28,7 @@ This package has only one dependency -- [`numpy`](https://numpy.org/).
 
 You can create graphics using your preferred visualization tools.  For
 simplicity, it's a design choice not to include a specific visualization library
-in `pyrotein`.  However, examples of using `Gnuplot` and ``matplotlib` are
+in `pyrotein`.  However, examples of using `Gnuplot` and `matplotlib` are
 included in the `examples` directory.  
 
 
