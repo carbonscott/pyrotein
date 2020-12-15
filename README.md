@@ -197,7 +197,7 @@ Here is an sample figure of a RMSD distance matrix in the `examples` directory.
 ## Caveats
 
 The warning `RuntimeWarning: Mean of empty slice` is triggered by `np.nanmean`
-when the input array has nothing but `nan` values.  
+when the input array has nothing but `np.nan` values.  
 
 
 <!--
