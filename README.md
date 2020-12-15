@@ -42,7 +42,7 @@ import pyrotein as pr
 
 ### Load a PDB structure
 
-The following code snippet loads a PDB file `4zwj.pdb` under `pdb_vr` directory.  
+The following code snippet loads a PDB file `6cmo.pdb` under `pdb` directory.  
 
 ```Python
 import pyrotein as pr
@@ -76,7 +76,7 @@ atom_dict["A"][1002]["CA"]
 #### Select a segment by range
 
 The following example demos how to select a segment of protein that represents
-visual rhodopsin from entry `4zwj`.  
+visual rhodopsin from entry `6cmo`.  
 
 ```Python
 # Create a lookup table for this pdb...
