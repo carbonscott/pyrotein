@@ -9,6 +9,13 @@ retrieved from a PDB file are stored in two formats: **list** and
 This package provides structure analysis capability based on distance matrix.
 
 
+## Install with `pip`
+
+```
+pip install pyrotein --user
+```
+
+
 <!-- Why it might be a good choice? -->
 
 <!-- Minimal dependency -->
