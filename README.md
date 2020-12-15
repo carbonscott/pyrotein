@@ -190,6 +190,9 @@ The `examples` directory contains two examples about distance matrix and RMSD
 distance matrix.  Two visualization choices are provided via `Gnuplot` and
 `matplotlib`.  
 
+Here is an sample figure in the `examples` directory.
+
+![](./examples/rmsd.png)
 
 ## Caveats
 
