@@ -49,8 +49,8 @@ import pyrotein as pr
 import os
 
 # Read coordinates from a PDB file...
-drc       =  "pdb_vr"
-pdb       =  "4zwj"
+drc       =  "pdb"
+pdb       =  "6cmo"
 fl_pdb    = f"{pdb}.pdb"
 pdb_path  = os.path.join(drc, fl_pdb)
 atoms_pdb = pr.atom.read(pdb_path)
