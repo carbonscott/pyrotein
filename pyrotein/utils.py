@@ -103,6 +103,9 @@ def fill_nan_with_mean(mat, axis = 0):
     # Assert mat is 2d...
     assert len(mat.shape) == 2, "fill_nan_with_mean ONLY supports 2D matrix."
 
+    # Assert axis is either 0 or 1 only...
+    assert axis == 0 or axis == 1, "fill_nan_with_mean ONLY allows 0 or 1 for axis."
+
     # Obtain the axis mean...
     axis_mean = np.nanmean(mat, axis = axis)
 
