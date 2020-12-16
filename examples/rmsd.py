@@ -4,24 +4,23 @@
 import os
 import numpy as np
 import pyrotein as pr
+from display import plot_dmat
+
 
 # Specify chains to process...
-drc      = "pdb"
-fl_chain = "chains.dat"
+fl_chain = "chains.comp.dat"
 lines    = pr.utils.read_file(fl_chain)
+drc      = "pdb"
 
-# Define the backbone...
-backbone = ["N", "CA", "C", "O"]
+# Define atoms used for distance matrix analysis...
+peptide = ["N", "CA", "C", "O"]
 
 # Specify the range of atoms from rhodopsin...
 nterm = 1
 cterm = 348
-len_backbone = (cterm - nterm + 1) * len(backbone)
+len_atoms_peptide = (cterm - nterm + 1) * len(peptide)
 
-# Initialize the matrix that stores accumulated coordinates...
-dmats = np.zeros((len(lines), len_backbone, len_backbone))
-
-# Accumulate coordinates...
+dmats = np.zeros((len(lines), len_atoms_peptide, len_atoms_peptide))
 for i_fl, (pdb, chain) in enumerate(lines):
     # Read coordinates from a PDB file...
     fl_pdb    = f"{pdb}.pdb"
@@ -34,11 +33,35 @@ for i_fl, (pdb, chain) in enumerate(lines):
     # Obtain coordinates...
     xyzs = pr.atom.extract_backbone_xyz(atom_dict, chain, nterm, cterm)
 
-    # Calculate individual distance matrix...
+    # Calculate distance matrix...
     dmat = pr.distance.calc_dmat(xyzs, xyzs)
-
-    # Update the accumulated matrix...
     dmats[i_fl, :, :] = dmat[:, :]
 
-# Calculate RMSD distance matrix...
-rmsd_dmat = pr.distance.calc_rmsd_mats(dmats)
+    ## # Export eps...
+    ## dmat_bin = np.array(pr.utils.bin_image(dmat, bin = 10, nan_replace = -1))
+    ## fl_dmat = f"{pdb}.{chain}.dmat.eps"
+    ## pal = "set palette defined ( 0 'yellow', 0 'white', 0.5 'blue', 1 'navy' )"
+    ## plot_dmat(dmat_bin, fl_dmat, lbl = [""] * len(dmat_bin), palette = pal, smooth = True)
+
+rmsd_dmat     = pr.distance.calc_rmsd_mats(dmats)
+rmsd_dmat_bin = pr.utils.bin_image(rmsd_dmat, bin = 1, nan_replace = -1)
+fl_rmsd_dmat  = "rmsd.eps"
+
+# Define a colorscheme...
+# Colorscheme is inspired by from this publication (DOI: 10.1093/nar/gkw555) from Zhong Ren
+pal = "set palette defined ( 0 'white', 0 'seagreen', 0.1 'white', 0.5 'blue', 1 'navy' )"
+## pr.display.plot_dmat( rmsd_dmat, 
+##                        fl_rmsd_dmat, 
+##                        lbl = [""] * len(rmsd_dmat),
+##                        lbl_font_size = 4,
+##                        palette = pal,
+##                        intst_max = 6,
+##                        smooth = False,)
+plot_dmat( rmsd_dmat_bin, 
+           fl_rmsd_dmat, 
+           lbl = [""] * len(rmsd_dmat_bin),
+           lbl_font_size = 4,
+           palette = pal,
+           intst_max = 6,
+           upper = 0.0,
+           smooth = False,)

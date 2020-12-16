@@ -153,6 +153,7 @@ def plot_left_singular(u, rank, length_mat, frac = 0.1, binning = 4):
     dmat = pr.utils.array2tril(u[:, rank], length_mat, offset = -1)
 
     # Define a color palette...
+    # Colorscheme is inspired by [this paper](https://academic.oup.com/nar/article/44/15/7457/2457750)
     pal = "set palette defined \
            (-10.001 'white', -10 '#800000', -5 'red', -1 'white', 0 'seagreen', \
               1 'white'  , 5 'blue', 10 'navy')"
@@ -169,7 +170,7 @@ def plot_left_singular(u, rank, length_mat, frac = 0.1, binning = 4):
     intst_min = -bound * frac
     intst_max =  bound * frac
 
-
+    # Visualization...
     plot_dmat(dmat_bin, 
               eps, 
               lbl = [""] * len(dmat_bin), 

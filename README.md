@@ -31,6 +31,8 @@ simplicity, it's a design choice not to include a specific visualization library
 in `pyrotein`.  However, examples of using `Gnuplot` and `matplotlib` are
 included in the `examples` directory.  
 
+The colorschemes used in RMSD distance matrix and SVD analysis are inspired by
+[this paper](https://academic.oup.com/nar/article/44/15/7457/2457750) from Zhong Ren.  
 
 ## Structure analysis workflow
 
