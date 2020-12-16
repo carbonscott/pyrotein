@@ -4,16 +4,16 @@
 import numpy as np
 
 
-def bin_image(img_orig, bin = 4, mode = 1, nan_replace = 0):
+def bin_image(img_orig, binning = 4, mode = 1, nan_replace = 0):
     ''' Bin an image for faster display.
     '''
     Y, X = img_orig.shape
 
     if mode == 0:
         img_bin = []
-        for i in range(0, Y, bin):
-            for j in range(0, X, bin):
-                sub_img = img_orig[i : min(i + bin, Y), j : min(j + bin, X)]
+        for i in range(0, Y, binning):
+            for j in range(0, X, binning):
+                sub_img = img_orig[i : min(i + binning, Y), j : min(j + binning, X)]
                 if np.all(np.isnan(sub_img)):
                     img_bin(append( (i, j, 0) ))
                 else:
@@ -21,10 +21,10 @@ def bin_image(img_orig, bin = 4, mode = 1, nan_replace = 0):
 
     if mode == 1:
         img_bin = []
-        for i in range(0, Y, bin):
+        for i in range(0, Y, binning):
             img_bin_y = []
-            for j in range(0, X, bin):
-                sub_img = img_orig[i : min(i + bin, Y), j : min(j + bin, X)]
+            for j in range(0, X, binning):
+                sub_img = img_orig[i : min(i + binning, Y), j : min(j + binning, X)]
                 if np.all(np.isnan(sub_img)): 
                     img_bin_y.append( nan_replace )
                 else:
