@@ -18,9 +18,6 @@ atoms_pdb = pr.atom.read(pdb_path)
 # Create a lookup table for this pdb...
 atom_dict = pr.atom.create_lookup_table(atoms_pdb)
 
-# Define atoms used for distance matrix analysis...
-peptide = ["N", "CA", "C", "O"]
-
 # Specify the range of atoms from rhodopsin...
 nterm = 1
 cterm = 348
