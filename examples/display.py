@@ -100,8 +100,8 @@ def plot_dmat(
     gp("set rmargin at screen 0.85")
     gp("set border linewidth 0.25")
 
-    for j in range(0,num_items):
-        gp(f"set label '{lbl[j]}' at {j+0},{j-0} left rotate by 45 font ', {lbl_font_size}' front")
+    for k, (x, y) in lbl.items():
+        gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {lbl_font_size}' front")
 
     if palette == "":
         gp("set palette defined ( -0.001 'white', 0 'blue', 0.5 'light-grey', 1 'red' )")
@@ -171,7 +171,7 @@ def plot_singular(s, top = 3, fl_export = "singular", log = False):
 
 
 
-def plot_left_singular(u, rank, length_mat, frac = 0.1, binning = 4):
+def plot_left_singular(u, rank, length_mat, guidelines = {}, frac = 0.1, binning = 4):
     ''' Plot left singular value as a lower triangular distance matrix.
     '''
     # Convert `u` at position `rank` into a lower triangular matrix...
@@ -198,15 +198,46 @@ def plot_left_singular(u, rank, length_mat, frac = 0.1, binning = 4):
     intst_min = -bound * frac
     intst_max =  bound * frac
 
+    # Draw guidelines (optional)...
+    lbls = {}
+    cmds_guideline_top = [""]
+    cmds_guideline_bottom = [""]
+    color_guideline = '#BBBBBB'
+    if len(guidelines) > 0: 
+        for k, (b,e) in guidelines.items():
+            # Vertical lines (beginning of a region)
+            cmd = f"set arrow front from {b-1},graph 0 to {b-1},graph 1 nohead dashtype 2 linewidth 0.5 linecolor rgb '{color_guideline}'"
+            cmds_guideline_bottom.append(cmd)
+            cmds_guideline_top.append(cmd)
+
+            # Vertical lines (end of a region)
+            cmd = f"set arrow front from {e-1},graph 0 to {e-1},graph 1 nohead dashtype 2 linewidth 0.5 linecolor rgb '{color_guideline}'"
+            cmds_guideline_bottom.append(cmd)
+            cmds_guideline_top.append(cmd)
+
+            # Horizontal lines (beginning of a region)
+            cmd = f"set arrow front from graph 0,first {b-1} to graph 1,first {b-1} nohead dashtype 2 linewidth 0.5 linecolor rgb '{color_guideline}'"
+            cmds_guideline_bottom.append(cmd)
+
+            # Horizontal lines (end of a region)
+            cmd = f"set arrow front from graph 0,first {e-1} to graph 1,first {e-1} nohead dashtype 2 linewidth 0.5 linecolor rgb '{color_guideline}'"
+            cmds_guideline_bottom.append(cmd)
+
+            # Put labels on the diagonal...
+            lbls[k] = [ (b + e) // 2, (b + e) // 2 ]
+
     # Visualization...
     plot_dmat(dmat_bin, 
               fl_export, 
-              lbl = [""] * len(dmat_bin), 
-              intst_min = intst_min,
-              intst_max = intst_max,
-              palette = pal, 
-              upper  = intst_min - 1,
-              smooth = True)
+              lbl           = lbls,
+              lbl_font_size = 14,
+              intst_min     = intst_min,
+              intst_max     = intst_max,
+              palette       = pal, 
+              upper         = intst_min - 1,
+              smooth        = True,
+              cmds_top      = cmds_guideline_top,
+              cmds_bottom   = cmds_guideline_bottom)
 
 
 
@@ -241,26 +272,20 @@ def plot_coeff(c, rank1, rank2, point_labels,
 
     gp("plot \\")
 
+    # Label each dot
+    gp(f"'-' using 1:2:3:4 with labels rotate variable offset char {offset} font ',8', \\")
+
+    # Connecting dots
+    gp(f"'-' using 1:2 with lines linewidth 0.5 linecolor rgb '#999999', \\")
+
     # Generate biolerplate code for Gnuplot
     spe = { i : 0 for i in color_items }.keys()
     ## spe = set(color_items)
     color_dict = cs.color_species(spe)
     for name, color in color_dict.items():
-        gp(f"'-' using 1:2   with point linewidth 1.0 pointtype 6 pointsize 0.8 linecolor rgb '{color}' title '{name}', \\")
+        gp(f"'-' using 1:2   with point linewidth 0.5 pointtype 6 pointsize 0.8 linecolor rgb '{color}' title '{name}', \\")
 
-    # Label each dot
-    gp(f"'-' using 1:2:3:4 with labels rotate variable offset char {offset} font ',8', \\")
-
-    # Connecting dots
-    gp(f"'-' using 1:2 with lines linewidth 0.5 linecolor rgb '#999999'")
     gp("")
-
-    # The plot statement addressing plot by colors
-    for k in color_dict.keys():
-        for i in range(len(c[0])): 
-            if color_items[i] == k:
-                gp(f"{c[rank1, i]} {c[rank2,i]}")  
-        gp("e")
 
     # Label each dot
     ## last_pdb = ""
@@ -284,6 +309,15 @@ def plot_coeff(c, rank1, rank2, point_labels,
         if last_pdb != curr_pdb: gp("")
         gp(f"{c[rank1, i]} {c[rank2,i]}")
         last_pdb = curr_pdb
+    gp("e")
+
+    # The plot statement addressing plot by colors
+    for k in color_dict.keys():
+        for i in range(len(c[0])): 
+            if color_items[i] == k:
+                gp(f"{c[rank1, i]} {c[rank2,i]}")  
+        gp("e")
+
     gp("exit")
 
     cs.color_table(color_dict)

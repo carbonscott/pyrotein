@@ -6,7 +6,7 @@ import pyrotein as pr
 import givens as gv
 from display import plot_dmat, plot_singular, plot_left_singular, plot_coeff
 import multiprocessing as mp
-from loaddata import load_xlsx
+from loaddata import load_xlsx, label_TMs
 import colorsimple as cs
 
 
@@ -46,20 +46,25 @@ c = c / u_ave
 num_cpu = mp.cpu_count()
 num_job = num_cpu - 1
 
-if 1:
+if 0:
     # Visualize singular values...
     plot_singular(s, top = 10, log = True)
 
-if 0:
+if 1:
+    labels_TM = label_TMs()
+    for k, v in labels_TM.items(): labels_TM[k] = [ i * 4 for i in v ]
+
     # Visualize a u matrix...
-    ## for rank in range(1,10):
-    ##     plot_left_singular(u, rank, 
-    ##                           length_mat = length_backbone, 
-    ##                           frac = 1.0,
-    ##                           binning = 1)
+    ## rank = 0
+    ## plot_left_singular(u, rank, 
+    ##                       length_mat = length_backbone, 
+    ##                       guidelines = labels_TM,
+    ##                       frac = 1.0,
+    ##                       binning = 1)
     def plot_left_singualr_by_rank(rank):
         return plot_left_singular(u, rank, 
-                                     length_mat = length_backbone,
+                                     length_mat = length_backbone, 
+                                     guidelines = labels_TM,
                                      frac = 1.0,
                                      binning = 1)
     with mp.Pool(num_job) as proc:
@@ -73,7 +78,7 @@ if 0:
     color_items = [ i[4] for i in lines ]
 
     # Visualize...
-    for j in range(0, 5):
+    for j in range(0, 10 - 1):
         for i in range(j + 1,10):
             rank1, rank2 = j, i
             offset = "1.0,0"
