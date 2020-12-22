@@ -246,7 +246,7 @@ def track_atoms(atoms, atoms_to_track):
             { atom[6] : 1 for atom in atoms if atom[2] == atom_to_track }
 
     # Obtain all residues...
-    resi_dict = get_resname(atoms)
+    resi_dict = extract_residue(atoms)
 
     # Fill the table (atoms_track_table)...
     for resi in resi_dict.keys():
