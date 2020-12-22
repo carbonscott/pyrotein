@@ -15,6 +15,12 @@ This package provides structure analysis capability based on distance matrix.
 pip install pyrotein --user
 ```
 
+## Upgrade to the latest version
+
+```
+pip install git+https://github.com/carbonscott/pyrotein --upgrade --user
+```
+
 
 <!-- Why it might be a good choice? -->
 
