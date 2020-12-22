@@ -3,7 +3,10 @@
 
 import pyrotein as pr
 import numpy as np
+import colorsimple as cs
 import GnuplotPy3
+import random
+import math
 
 
 def plot_dmat(
@@ -35,8 +38,10 @@ def plot_dmat(
     gp("set terminal postscript eps  size 6, 7 \\")
     gp("                             enhanced color \\")
     gp("                             font 'Helvetica,14' \\")
-    gp("                             linewidth 2")
-    gp(f"set output '{fl_dmat}'")
+    gp("                             linewidth 1")
+
+    # Declare the filename to export...
+    gp(f"set output '{fl_dmat}.eps'")
     gp("unset key")
 
     # Declare a multiplot...
@@ -69,7 +74,8 @@ def plot_dmat(
     for cmd in cmds_top:
         gp(cmd)
 
-    gp(f"plot '-' using 1:2 with linespoints pointtype 6 pointsize 0.4 linewidth 0.25 linecolor rgb 'black' title 'Column mean'")
+    gp(f"plot '-' using 1:2 with lines linewidth 0.25 linecolor rgb 'black' title 'Column mean'")
+    ## gp(f"plot '-' using 1:2 with linespoints pointtype 6 pointsize 0.4 linewidth 0.25 linecolor rgb 'black' title 'Column mean'")
     for i,v in enumerate(column_mean_dmat):
         gp(f"{i} {v}")
     gp("e")
@@ -127,19 +133,38 @@ def plot_dmat(
 
 
 
-def plot_singular(s, eps = "singular.eps", log = False):
+def plot_singular(s, top = 3, fl_export = "singular", log = False):
     ''' Plot singular values.
     '''
     gp = GnuplotPy3.GnuplotPy3()
-    gp("set terminal postscript eps size 3.5, 2.62 enhanced color font 'Helvetica,14' linewidth 2")
-    gp(f"set output '{eps}'")
+
+    gp("set terminal postscript eps  size 3.5, 2.62 \\")
+    gp("                             enhanced color \\")
+    gp("                             font 'Helvetica,14' \\")
+    gp("                             linewidth 1.5")
+
+    # Declare the filename to export...
+    gp(f"set output '{fl_export}.eps'")
     gp("unset key")
+
+    gp("set xrange [-5:*]")
     if log: gp("set log y")
     gp("set xlabel 'Rank of singular values'")
     gp("set ylabel 'Singular values'")
-    gp("plot '-' using 1:2 with linespoints linetype 2 linewidth 1 linecolor rgb 'black'")
+    gp("plot \\")
+    for c in ("#0AFF00", "#000000"):
+        gp(f"'-' using 1:2 with points pointtype 7 linewidth 1 linecolor rgb '{c}' notitle, \\")
+    gp("'-' using 1:2 with lines linewidth 1 linecolor rgb '#000000' notitle, \\")
+    gp("")
 
-    for i, v in enumerate(s): gp(f"{i} {v}")
+    for i, v in enumerate(s[:top]): 
+        gp(f"{i} {v}")
+    gp("e")
+    for i, v in enumerate(s[top:]): 
+        gp(f"{i+top} {v}")
+    gp("e")
+    for i, v in enumerate(s): 
+        gp(f"{i} {v}")
     gp("e")
     gp("exit")
 
@@ -152,6 +177,9 @@ def plot_left_singular(u, rank, length_mat, frac = 0.1, binning = 4):
     # Convert `u` at position `rank` into a lower triangular matrix...
     dmat = pr.utils.array2tril(u[:, rank], length_mat, offset = -1)
 
+    # Restore dmat to a full matrix for visualization...
+    dmat_full = dmat + dmat.T
+
     # Define a color palette...
     # Colorscheme is inspired by [this paper](https://academic.oup.com/nar/article/44/15/7457/2457750)
     pal = "set palette defined \
@@ -159,11 +187,11 @@ def plot_left_singular(u, rank, length_mat, frac = 0.1, binning = 4):
               1 'white'  , 5 'blue', 10 'navy')"
 
     # Filename to export...
-    eps = f"u{rank:02d}.eps"
+    fl_export = f"u{rank:02d}"
 
-    # Export eps...
-    dmat_bin = pr.utils.bin_image(dmat, binning = binning)
-    dmat_bin_check = dmat_bin.copy()
+    # Bin image???
+    dmat_bin = dmat_full
+    if binning != 1: dmat_bin = pr.utils.bin_image(dmat, binning = binning)
 
     # Find the full range...
     bound = np.max(np.abs([np.min(dmat_bin), np.max(dmat_bin)]))
@@ -172,7 +200,7 @@ def plot_left_singular(u, rank, length_mat, frac = 0.1, binning = 4):
 
     # Visualization...
     plot_dmat(dmat_bin, 
-              eps, 
+              fl_export, 
               lbl = [""] * len(dmat_bin), 
               intst_min = intst_min,
               intst_max = intst_max,
@@ -183,23 +211,79 @@ def plot_left_singular(u, rank, length_mat, frac = 0.1, binning = 4):
 
 
 
-def plot_coeff(c, rank1, rank2, labels, offset = '2.0,0.0', rot = 0):
+def plot_coeff(c, rank1, rank2, point_labels,
+                                color_items,
+                                xrange = ("*", "*"),
+                                yrange = ("*", "*"),
+                                offset = '2.0,0.0',
+                                rot = 0,
+                                height = 3,
+                                width = 3):
     ''' Scatter plot of examples from 2 dimensions specified by rank1 and rank2.
     '''
     gp = GnuplotPy3.GnuplotPy3()
-    gp("set terminal postscript eps size 3.5, 2.62 enhanced color font 'Helvetica,14' linewidth 2")
+    gp(f"set terminal postscript eps  size {width}, {height} \\")
+    gp( "                             enhanced color \\")
+    gp( "                             font 'Helvetica,14' \\")
+    gp( "                             linewidth 1.5")
+
+    # Declare the filename to export...
     gp(f"set output 'coeff_{rank1:02d}vs{rank2:02d}.eps'")
     gp("unset key")
-    gp(f"set xlabel 'c_{{{rank1:02d}}}'")
-    gp(f"set ylabel 'c_{{{rank2:02d}}}'")
 
-    gp( "plot '-' using 1:2   with point linewidth 1.5 pointtype 6 pointsize 0.5 linecolor rgb '#003f5c', \\")
-    gp(f"     '-' using 1:2:3 with labels rotate by {rot} offset char {offset} font ',8', \\")
+    gp(f"set xrange [{xrange[0]}:{xrange[1]}]")
+    gp(f"set yrange [{yrange[0]}:{yrange[1]}]")
+
+    gp(f"set xlabel 'c_{{{rank1:02d}}} (\305)'")
+    gp(f"set ylabel 'c_{{{rank2:02d}}} (\305)'")
+    gp("set size 1.0,1.0")
+    ## gp("set size ratio -1")
+
+    gp("plot \\")
+
+    # Generate biolerplate code for Gnuplot
+    spe = { i : 0 for i in color_items }.keys()
+    ## spe = set(color_items)
+    color_dict = cs.color_species(spe)
+    for name, color in color_dict.items():
+        gp(f"'-' using 1:2   with point linewidth 1.0 pointtype 6 pointsize 0.8 linecolor rgb '{color}' title '{name}', \\")
+
+    # Label each dot
+    gp(f"'-' using 1:2:3:4 with labels rotate variable offset char {offset} font ',8', \\")
+
+    # Connecting dots
+    gp(f"'-' using 1:2 with lines linewidth 0.5 linecolor rgb '#999999'")
     gp("")
+
+    # The plot statement addressing plot by colors
+    for k in color_dict.keys():
+        for i in range(len(c[0])): 
+            if color_items[i] == k:
+                gp(f"{c[rank1, i]} {c[rank2,i]}")  
+        gp("e")
+
+    # Label each dot
+    ## last_pdb = ""
+    ## for i in range(len(c[0])): 
+    ##     point_label = point_labels[i]
+    ##     curr_pdb = point_label[:4]
+    ##     if last_pdb == curr_pdb: point_label = point_label[-1]
+    ##     gp(f"{c[rank1, i]} {c[rank2,i]} {point_label}")  
+    ##     last_pdb = curr_pdb
+    ## gp("e")
     for i in range(len(c[0])): 
-        gp(f"{c[rank1, i]} {c[rank2,i]}")  
+        point_label = point_labels[i]
+        ## gp(f"{c[rank1, i]} {c[rank2,i]} {point_label} {random.random() * 360}")  
+        gp(f"{c[rank1, i]} {c[rank2,i]} {point_label} {rot}")  
     gp("e")
+
+    # Connecting dots
+    last_pdb = point_labels[0][:4]
     for i in range(len(c[0])): 
-        gp(f"{c[rank1, i]} {c[rank2,i]} {labels[i]}")  
-    gp("e")
+        curr_pdb = point_labels[i][:4]
+        if last_pdb != curr_pdb: gp("")
+        gp(f"{c[rank1, i]} {c[rank2,i]}")
+        last_pdb = curr_pdb
     gp("exit")
+
+    cs.color_table(color_dict)

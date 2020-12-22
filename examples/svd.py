@@ -4,11 +4,12 @@
 import numpy as np
 import pyrotein as pr
 import os
+from loaddata import load_xlsx
 
 
 # Specify chains to process...
-fl_chain = "chains.comp.dat"
-lines    = pr.utils.read_file(fl_chain)
+fl_chain = "chains.comp.xlsx"
+lines    = load_xlsx(fl_chain)
 drc      = "pdb"
 
 # Define atoms used for distance matrix analysis...
@@ -22,7 +23,10 @@ len_backbone = (cterm - nterm + 1) * len(backbone)
 # Accumulate distance matices as lower triangluar matrix...
 len_lower_tri = (len_backbone * len_backbone - len_backbone) // 2
 dmats = np.zeros((len(lines), len_lower_tri))
-for i_fl, (pdb, chain) in enumerate(lines):
+for i_fl, line in enumerate(lines):
+    # Unpack parameters
+    _, pdb, chain, species = line[:4]
+
     # Read coordinates from a PDB file...
     fl_pdb    = f"{pdb}.pdb"
     pdb_path  = os.path.join(drc, fl_pdb)
@@ -47,13 +51,9 @@ pr.utils.fill_nan_with_mean(dmats.T, axis = 1)
 # Column as example
 # Row    as feature
 u, s, vh = np.linalg.svd( dmats.T, full_matrices = False )
-c = np.matmul(np.diag(s), vh)
-
 
 # Export data for downstream analysis...
-np.save("lines.npy" , lines)
 np.save("dmats.npy" , dmats)
 np.save("u.npy" , u)
 np.save("s.npy" , s)
 np.save("vh.npy", vh)
-np.save("c.npy" , c)
