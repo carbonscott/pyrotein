@@ -10,8 +10,3 @@ __all__ = [
           ]
 
 version = "0.1.3"
-
-print("""\
-
-Welcome to pyrotein_{VERSION}""".format( VERSION = version ) )
-print()
