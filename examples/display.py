@@ -38,7 +38,7 @@ def plot_dmat(
     gp("set terminal postscript eps  size 6, 7 \\")
     gp("                             enhanced color \\")
     gp("                             font 'Helvetica,14' \\")
-    gp("                             linewidth 1")
+    gp("                             linewidth 1.5")
 
     # Declare the filename to export...
     gp(f"set output '{fl_dmat}.eps'")
@@ -133,9 +133,11 @@ def plot_dmat(
 
 
 
-def plot_singular(s, top = 3, fl_export = "singular", log = False):
+def plot_singular(s, top = 3, fl_export = "singular", log = False, index_from_zero = True):
     ''' Plot singular values.
     '''
+    index_base = 0 if index_from_zero else 1
+
     gp = GnuplotPy3.GnuplotPy3()
 
     gp("set terminal postscript eps  size 3.5, 2.62 \\")
@@ -158,24 +160,27 @@ def plot_singular(s, top = 3, fl_export = "singular", log = False):
     gp("")
 
     for i, v in enumerate(s[:top]): 
-        gp(f"{i} {v}")
+        gp(f"{i + index_base} {v}")
     gp("e")
     for i, v in enumerate(s[top:]): 
-        gp(f"{i+top} {v}")
+        gp(f"{i+top + index_base} {v}")
     gp("e")
     for i, v in enumerate(s): 
-        gp(f"{i} {v}")
+        gp(f"{i + index_base} {v}")
     gp("e")
     gp("exit")
 
 
 
 
-def plot_left_singular(u, rank, length_mat, guidelines = {}, frac = 0.1, binning = 4):
+def plot_left_singular(u, rank, length_mat, guidelines = {}, frac = 0.1, binning = 4, index_from_zero = True):
     ''' Plot left singular value as a lower triangular distance matrix.
     '''
+    # Comply with the convention (1-based index)
+    rank_in_data = rank if index_from_zero else rank - 1
+
     # Convert `u` at position `rank` into a lower triangular matrix...
-    dmat = pr.utils.array2tril(u[:, rank], length_mat, offset = -1)
+    dmat = pr.utils.array2tril(u[:, rank_in_data], length_mat, offset = -1)
 
     # Restore dmat to a full matrix for visualization...
     dmat_full = dmat + dmat.T
@@ -242,16 +247,25 @@ def plot_left_singular(u, rank, length_mat, guidelines = {}, frac = 0.1, binning
 
 
 
-def plot_coeff(c, rank1, rank2, point_labels,
+def plot_coeff(c, rank1, rank2, entries,
                                 color_items,
+                                color_order,
+                                label = True,
                                 xrange = ("*", "*"),
                                 yrange = ("*", "*"),
                                 offset = '2.0,0.0',
                                 rot = 0,
                                 height = 3,
-                                width = 3):
+                                width = 3,
+                                index_from_zero = True):
     ''' Scatter plot of examples from 2 dimensions specified by rank1 and rank2.
     '''
+    # Comply with the convention (1-based index)
+    rank1_in_data = rank1 if index_from_zero else rank1 - 1
+    rank2_in_data = rank2 if index_from_zero else rank2 - 1
+    assert rank1_in_data >= 0, "Wrong value for rank1 (base-0 or base-1, is the input index correct?)"
+    assert rank2_in_data >= 0, "Wrong value for rank2 (base-0 or base-1, is the input index correct?)"
+
     gp = GnuplotPy3.GnuplotPy3()
     gp(f"set terminal postscript eps  size {width}, {height} \\")
     gp( "                             enhanced color \\")
@@ -260,6 +274,7 @@ def plot_coeff(c, rank1, rank2, point_labels,
 
     # Declare the filename to export...
     gp(f"set output 'coeff_{rank1:02d}vs{rank2:02d}.eps'")
+    if not label: gp(f"set output 'coeff_{rank1:02d}vs{rank2:02d}.nolabel.eps'")
     gp("unset key")
 
     gp(f"set xrange [{xrange[0]}:{xrange[1]}]")
@@ -272,42 +287,28 @@ def plot_coeff(c, rank1, rank2, point_labels,
 
     gp("plot \\")
 
-    # Label each dot
-    gp(f"'-' using 1:2:3:4 with labels rotate variable offset char {offset} font ',8', \\")
-
     # Connecting dots
     gp(f"'-' using 1:2 with lines linewidth 0.5 linecolor rgb '#999999', \\")
 
     # Generate biolerplate code for Gnuplot
-    spe = { i : 0 for i in color_items }.keys()
-    ## spe = set(color_items)
-    color_dict = cs.color_species(spe)
+    color_dict = cs.color_species(color_order)
     for name, color in color_dict.items():
-        gp(f"'-' using 1:2   with point linewidth 0.5 pointtype 6 pointsize 0.8 linecolor rgb '{color}' title '{name}', \\")
+        if label:
+            gp(f"'-' using 1:2   with point linewidth 0.5 pointtype 6 pointsize 0.8 linecolor rgb '{color}' title '{name}', \\")
+        else:
+            gp(f"'-' using 1:2   with point linewidth 0.5 pointtype 7 pointsize 1.0 linecolor rgb '{color}' title '{name}', \\")
+
+    # Label each dot
+    if label: gp(f"'-' using 1:2:3:4 with labels rotate variable offset char {offset} font ',2', \\")
 
     gp("")
 
-    # Label each dot
-    ## last_pdb = ""
-    ## for i in range(len(c[0])): 
-    ##     point_label = point_labels[i]
-    ##     curr_pdb = point_label[:4]
-    ##     if last_pdb == curr_pdb: point_label = point_label[-1]
-    ##     gp(f"{c[rank1, i]} {c[rank2,i]} {point_label}")  
-    ##     last_pdb = curr_pdb
-    ## gp("e")
-    for i in range(len(c[0])): 
-        point_label = point_labels[i]
-        ## gp(f"{c[rank1, i]} {c[rank2,i]} {point_label} {random.random() * 360}")  
-        gp(f"{c[rank1, i]} {c[rank2,i]} {point_label} {rot}")  
-    gp("e")
-
     # Connecting dots
-    last_pdb = point_labels[0][:4]
+    last_pdb = entries[0][:4]
     for i in range(len(c[0])): 
-        curr_pdb = point_labels[i][:4]
+        curr_pdb = entries[i][:4]
         if last_pdb != curr_pdb: gp("")
-        gp(f"{c[rank1, i]} {c[rank2,i]}")
+        gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]}")
         last_pdb = curr_pdb
     gp("e")
 
@@ -315,9 +316,18 @@ def plot_coeff(c, rank1, rank2, point_labels,
     for k in color_dict.keys():
         for i in range(len(c[0])): 
             if color_items[i] == k:
-                gp(f"{c[rank1, i]} {c[rank2,i]}")  
+                gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]}")  
+        gp("e")
+
+    if label:
+        # Label each dot that is colored only (even thought it's selected from metadata)
+        for k in color_dict.keys():
+            for i in range(len(c[0])): 
+                if color_items[i] == k:
+                    point_label = entries[i]
+                    gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]} {point_label} {rot}")  
         gp("e")
 
     gp("exit")
 
-    cs.color_table(color_dict)
+    ## cs.color_table(color_dict)
