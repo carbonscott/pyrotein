@@ -71,7 +71,7 @@ if 0:
     with mp.Pool(num_job) as proc:
         proc.map( plot_left_singualr_by_rank, range(1, 11) )
 
-if 1:
+if 0:
     # Create labels...
     entries = [ '-'.join(i[1:1+2]) for i in lines ]
 
@@ -104,9 +104,10 @@ if 1:
                                         width = 3,
                                         index_from_zero = False)
 
-if 0:
+# Zoom or Rotate
+if 1:
     # Create labels...
-    point_labels = ['-'.join(i[1:1+2]) for i in lines]
+    entries = ['-'.join(i[1:1+2]) for i in lines]
 
     # Create color dictionary based on species...
     color_items = [ i[4] for i in lines ]
@@ -120,22 +121,24 @@ if 0:
                         "All-trans detached",
                         "opsin" ]
 
-    rank1, rank2 = 1, 4
+    rank1, rank2 = 4, 5
 
     ## # Rotate points in rank1-rank2 plane by theta...
     ## theta = 90
     ## gv.givens_rotation(u, s, c, rank1, rank2, theta)
 
     offset = "0.5,0.0"
-    plot_coeff(c, rank1, rank2, point_labels = point_labels, 
+    plot_coeff(c, rank1, rank2, entries = entries, 
                                 color_items = color_items, 
                                 color_order = reaction_order,
-                                ## xrange = (-0.8, -0.5),
-                                ## yrange = (-0.2, 0.0),
+                                label = True,
+                                xrange = (-.6, -.5),
+                                ## yrange = (-0.5, 0.5),
                                 offset = offset, 
                                 rot = 0,
                                 height = 3,
-                                width = 3)
+                                width = 3,
+                                index_from_zero = False)
 
 if 0:
     def plot_left_singualr_by_rank(rank):
