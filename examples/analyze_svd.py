@@ -22,7 +22,7 @@ lines    = load_xlsx(fl_chain)
 
 # Specify the range of atoms from rhodopsin...
 nterm = 1
-cterm = 322
+cterm = 322    # It was 348
 backbone = ["N", "CA", "C", "O"]
 length_backbone = (cterm - nterm + 1) * len(backbone)
 
