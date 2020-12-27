@@ -46,9 +46,9 @@ c = c / u_ave
 num_cpu = mp.cpu_count()
 num_job = num_cpu - 1
 
-if 0:
+if 1:
     # Visualize singular values...
-    plot_singular(s, top = 10, log = True, index_from_zero = False)
+    plot_singular(s, top = 20, log = True, index_from_zero = False)
 
 if 0:
     labels_TM = label_TMs()
@@ -69,9 +69,9 @@ if 0:
                                      binning = 1,
                                      index_from_zero = False)
     with mp.Pool(num_job) as proc:
-        proc.map( plot_left_singualr_by_rank, range(1, 11) )
+        proc.map( plot_left_singualr_by_rank, range(1, 20) )
 
-if 1:
+if 0:
     # Create labels...
     entries = [ '-'.join(i[1:1+2]) for i in lines ]
 
@@ -88,14 +88,14 @@ if 1:
                         "opsin" ]
 
     # Visualize...
-    for j in range(1, 10):
-        for i in range(j + 1,10):
+    for j in range(1, 20):
+        for i in range(j + 1,20):
             rank1, rank2 = j, i
             offset = "0.5,0"
             plot_coeff(c, rank1, rank2, entries = entries, 
                                         color_items = color_items, 
                                         color_order = reaction_order,
-                                        label = True,
+                                        label = False,
                                         ## xrange = (32.0, 32.5),
                                         ## yrange = (-0.5, 0.5),
                                         offset = offset, 
@@ -104,9 +104,10 @@ if 1:
                                         width = 3,
                                         index_from_zero = False)
 
+# Zoom or Rotate
 if 0:
     # Create labels...
-    point_labels = ['-'.join(i[1:1+2]) for i in lines]
+    entries = ['-'.join(i[1:1+2]) for i in lines]
 
     # Create color dictionary based on species...
     color_items = [ i[4] for i in lines ]
@@ -120,22 +121,24 @@ if 0:
                         "All-trans detached",
                         "opsin" ]
 
-    rank1, rank2 = 1, 4
+    rank1, rank2 = 4, 5
 
     ## # Rotate points in rank1-rank2 plane by theta...
     ## theta = 90
     ## gv.givens_rotation(u, s, c, rank1, rank2, theta)
 
     offset = "0.5,0.0"
-    plot_coeff(c, rank1, rank2, point_labels = point_labels, 
+    plot_coeff(c, rank1, rank2, entries = entries, 
                                 color_items = color_items, 
                                 color_order = reaction_order,
-                                ## xrange = (-0.8, -0.5),
-                                ## yrange = (-0.2, 0.0),
+                                label = True,
+                                xrange = (-.6, -.5),
+                                ## yrange = (-0.5, 0.5),
                                 offset = offset, 
                                 rot = 0,
                                 height = 3,
-                                width = 3)
+                                width = 3,
+                                index_from_zero = False)
 
 if 0:
     def plot_left_singualr_by_rank(rank):
