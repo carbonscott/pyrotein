@@ -17,7 +17,7 @@ backbone = ["N", "CA", "C", "O"]
 
 # Specify the range of atoms from rhodopsin...
 nterm = 1
-cterm = 322   # It was 348
+cterm = 348
 len_backbone = (cterm - nterm + 1) * len(backbone)
 
 # Accumulate distance matices as lower triangluar matrix...
