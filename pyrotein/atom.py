@@ -17,6 +17,8 @@ HETATM    7  CBB CYC A 175      22.926  32.891  15.989  1.00 13.87           C
 HETATM    8  CBC CYC A 175      33.396  29.891   9.878  1.00 17.93           C 
 HETATM    9  CBD CYC A 175      36.524  37.532  15.828  1.00 27.36           C 
 HETATM   10  NB  CYC A 175      26.189  35.771  16.906  1.00 13.89           N
+ATOM   5068  ND2 ASN B 326      30.914  33.473  -8.519  1.00107.62           N  
+01234567890123456789012345678901234567890123456789012345678901234567890123456789
 '''
 
 def split(line):
@@ -34,14 +36,19 @@ def split(line):
 
              int  (line[22:26]),     #  6  Residue sequence number
              line[26   ].strip(),    #  7  Code for insertions of residues
-             float(line[30:38]),     #  8  X
-             float(line[38:46]),     #  9  Y
-             float(line[46:54]),     # 10  Z
-             float(line[54:60]),     # 11  Occupancy
-             float(line[60:66]),     # 12  Temperature factor
 
-             line[72:76].strip(),    # 13  Segment identifier
-             line[76:78].strip(),    # 14  Element symbol 
+             line[27:30].strip(),    #  8  Blank string
+
+             float(line[30:38]),     #  9  X
+             float(line[38:46]),     # 10  Y
+             float(line[46:54]),     # 11  Z
+             float(line[54:60]),     # 12  Occupancy
+             float(line[60:66]),     # 13  Temperature factor
+
+             line[66:72].strip(),    # 14  Blank string
+
+             line[72:76].strip(),    # 15  Segment identifier
+             line[76:78].strip(),    # 16  Element symbol 
            ]
 
 
@@ -87,8 +94,10 @@ def spec():
           11  Occupancy
           12  Temperature factor
 
-          13  Segment identifier
-          14  Element symbol 
+          13  Blank string
+
+          14  Segment identifier
+          15  Element symbol 
            '''
          )
 
