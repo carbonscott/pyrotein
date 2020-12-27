@@ -273,8 +273,18 @@ def plot_coeff(c, rank1, rank2, entries,
     gp( "                             linewidth 1.5")
 
     # Declare the filename to export...
-    if not label: gp(f"set output 'coeff_{rank1:02d}vs{rank2:02d}.nolabel.eps'")
-    else: gp(f"set output 'coeff_{rank1:02d}vs{rank2:02d}.eps'")
+    fl_out = f"coeff_{rank1:02d}vs{rank2:02d}"
+
+    # Zoom???
+    range_default = ("*", "*")
+    if xrange != range_default  or \
+       yrange != range_default: fl_out = f"{fl_out}.zoom"
+
+    # Label???
+    if not label: fl_out = f"{fl_out}.nolabel"
+
+    # Decide the final filename
+    gp(f"set output '{fl_out}.eps'")
     gp("unset key")
 
     gp(f"set xrange [{xrange[0]}:{xrange[1]}]")
