@@ -143,7 +143,7 @@ def extract_backbone_xyz(atom_dict, chain, nterm, cterm):
         coordinates in the lookup table format.  
     '''
     # Extract the segment of amino acids...
-    rho_dict = extract_segment(atom_dict, chain, nterm, cterm)
+    pro_dict = extract_segment(atom_dict, chain, nterm, cterm)
 
     # Define atoms used for distance matrix analysis...
     backbone = ["N", "CA", "C", "O"]
@@ -158,12 +158,12 @@ def extract_backbone_xyz(atom_dict, chain, nterm, cterm):
         # From each backbone atom
         for j, p in enumerate(backbone):
             # Derive the matrix index...
-            mat_i = (i - 1) * len(backbone) + j
+            mat_i = (i - nterm) * len(backbone) + j
 
             # Assign coordinates to matrix at index mat_i...
-            if i in rho_dict:
-                if p in rho_dict[i]:
-                    xyzs[mat_i] = get_coord(rho_dict[i][p])
+            if i in pro_dict:
+                if p in pro_dict[i]:
+                    xyzs[mat_i] = get_coord(pro_dict[i][p])
 
     return xyzs
 
