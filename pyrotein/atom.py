@@ -138,16 +138,15 @@ def extract_segment(atom_dict, chain, nterm, cterm):
 
 
 
-def extract_backbone_xyz(atom_dict, chain, nterm, cterm):
-    ''' Extract the backbone atoms ["N", "CA", "C", "O"] from atomic
-        coordinates in the lookup table format.  
+def extract_xyz(atoms_to_extract, atom_dict, chain, nterm, cterm):
+    ''' Extract atomic coordinates of interest (specified in the first
+        argument) in the lookup table format.  
     '''
     # Extract the segment of amino acids...
     pro_dict = extract_segment(atom_dict, chain, nterm, cterm)
 
     # Define atoms used for distance matrix analysis...
-    backbone = ["N", "CA", "C", "O"]
-    len_backbone = (cterm - nterm + 1) * len(backbone)
+    len_backbone = (cterm - nterm + 1) * len(atoms_to_extract)
 
     # Preallocate memory for storing coordinates...
     xyzs    = np.zeros((len_backbone, 3))    # Initialize coordinate matrix
@@ -155,10 +154,10 @@ def extract_backbone_xyz(atom_dict, chain, nterm, cterm):
 
     # From each residue
     for i in range(nterm, cterm + 1):
-        # From each backbone atom
-        for j, p in enumerate(backbone):
+        # From each atom
+        for j, p in enumerate(atoms_to_extract):
             # Derive the matrix index...
-            mat_i = (i - nterm) * len(backbone) + j
+            mat_i = (i - nterm) * len(atoms_to_extract) + j
 
             # Assign coordinates to matrix at index mat_i...
             if i in pro_dict:
