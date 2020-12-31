@@ -13,15 +13,27 @@ def plot_dmat(
     dmat,                  # Input data, which is a distance matrix
     fl_dmat,               # Filename of the exported file
     lbl,                   # Labels used to mark on the diagonal
-    lbl_font_size = 8,     # Fontsize for label
+    lbl_fontsize = 8,     # Fontsize for label
+    width         = 6,     # inch
+    height        = 7,     # inch
+    fontsize      = 14,    # pt
+    linewidth     = 1.5,   # pt
     palette       = "",    # Palette definition
     intst_min     = "0",   # Min intensity value
     intst_max     = "*",   # Max intensity value
     smooth        = False, # Choices of styles: smooth vs pixelated
     upper         = 0.5,   # The value to facilitate the plot of lower triangle matrix
+    vrange        = [],
+    showzero      = True,
     cmds_top      = [],    # Customized command for upper panel
     cmds_bottom   = [],    # Customized command for bottom panel
     ):
+    assert len(vrange) == 0 or len(vrange) == 2, "vrange has to be an empty or 2-member tuple.  "
+
+    # Partial???
+    range_default = ("*", "*")
+    if len(vrange) == 2: fl_dmat = f"{fl_dmat}.zoom"
+
     # Get the mean...
     column_mean_dmat = np.nanmean(dmat, axis = 0, keepdims = False)
 
@@ -31,14 +43,14 @@ def plot_dmat(
     if intst_max == "*":
         intst_min = np.nanmin(dmat)
         intst_max = np.nanmax(dmat)
-    intst_column_mean_min = np.nanmin(column_mean_dmat)
-    intst_column_mean_max = np.nanmax(column_mean_dmat)
+    intst_column_mean_min = np.min( [np.nanmin(column_mean_dmat), 0] )
+    intst_column_mean_max = np.max( [np.nanmax(column_mean_dmat), 0] )
 
     gp = GnuplotPy3.GnuplotPy3()
-    gp("set terminal postscript eps  size 6, 7 \\")
-    gp("                             enhanced color \\")
-    gp("                             font 'Helvetica,14' \\")
-    gp("                             linewidth 1.5")
+    gp(f"set terminal postscript eps  size {width}, {height} \\")
+    gp(f"                             enhanced color \\")
+    gp(f"                             font 'Helvetica,{fontsize}' \\")
+    gp(f"                             linewidth {linewidth}")
 
     # Declare the filename to export...
     gp(f"set output '{fl_dmat}.eps'")
@@ -66,22 +78,24 @@ def plot_dmat(
     gp("set bmargin 0")
     gp("set lmargin at screen 0.10")
     gp("set rmargin at screen 0.85")
-    gp("set border linewidth 0.25")
     gp(f"set xrange [-1:{num_items}]")
     gp(f"set yrange [{intst_column_mean_min}:{intst_column_mean_max}]")
     gp("set key top right")
 
+    if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth 0.5 linecolor rgb 'black'")
+
     for cmd in cmds_top:
         gp(cmd)
 
-    gp(f"plot '-' using 1:2 with lines linewidth 0.25 linecolor rgb 'black' title 'Column mean'")
-    ## gp(f"plot '-' using 1:2 with linespoints pointtype 6 pointsize 0.4 linewidth 0.25 linecolor rgb 'black' title 'Column mean'")
+    gp(f"plot '-' using 1:2 with lines linewidth 0.5 linecolor rgb 'black' title 'Column mean'")
     for i,v in enumerate(column_mean_dmat):
         gp(f"{i} {v}")
     gp("e")
 
 
     # PLOT 2: distance matrix...
+    gp(f"unset arrow")
+    gp(f"unset key")
     gp(f"unset xrange")
     gp(f"unset yrange")
     gp(f"unset xtics")
@@ -98,10 +112,9 @@ def plot_dmat(
     gp(f"set yrange [{num_items}   :-1          ]")
     gp("set lmargin at screen 0.10")
     gp("set rmargin at screen 0.85")
-    gp("set border linewidth 0.25")
 
     for k, (x, y) in lbl.items():
-        gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {lbl_font_size}' front")
+        gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {lbl_fontsize}' front")
 
     if palette == "":
         gp("set palette defined ( -0.001 'white', 0 'blue', 0.5 'light-grey', 1 'red' )")
@@ -122,8 +135,11 @@ def plot_dmat(
         gp("splot '-' using 1:2:3")
     else: 
         gp("plot '-' using 1:2:3 with image")
+
     for j in range(num_items):
         for k in range(num_items):
+            if len(vrange) == 2: 
+                if vrange[1] < j or j < vrange[0]: continue
             if j > k: gp(f"{k} {j} {dmat[j, k]}")
             else: gp(f"{k} {j} {upper}")
         gp(" ")
@@ -173,7 +189,17 @@ def plot_singular(s, top = 3, fl_export = "singular", log = False, index_from_ze
 
 
 
-def plot_left_singular(u, rank, length_mat, guidelines = {}, frac = 0.1, binning = 4, index_from_zero = True):
+def plot_left_singular(u, rank, length_mat, 
+                                guidelines      = {}, 
+                                showguidelines  = True,
+                                width           = 6,
+                                height          = 7,
+                                fontsize        = 14,
+                                lbl_fontsize   = 10,
+                                vrange          = [],
+                                frac            = 0.1, 
+                                binning         = 4, 
+                                index_from_zero = True):
     ''' Plot left singular value as a lower triangular distance matrix.
     '''
     # Comply with the convention (1-based index)
@@ -230,17 +256,24 @@ def plot_left_singular(u, rank, length_mat, guidelines = {}, frac = 0.1, binning
 
             # Put labels on the diagonal...
             lbls[k] = [ (b + e) // 2, (b + e) // 2 ]
+    if not showguidelines: 
+        cmds_guideline_top = []
+        cmds_guideline_bottom = []
 
     # Visualization...
     plot_dmat(dmat_bin, 
               fl_export, 
               lbl           = lbls,
-              lbl_font_size = 14,
+              lbl_fontsize =  lbl_fontsize,
               intst_min     = intst_min,
               intst_max     = intst_max,
+              width         = width,     # inch
+              height        = height,     # inch
+              fontsize      = fontsize,
               palette       = pal, 
               upper         = intst_min - 1,
               smooth        = True,
+              vrange        = vrange,
               cmds_top      = cmds_guideline_top,
               cmds_bottom   = cmds_guideline_bottom)
 
@@ -257,7 +290,11 @@ def plot_coeff(c, rank1, rank2, entries,
                                 rot = 0,
                                 height = 3,
                                 width = 3,
-                                index_from_zero = True):
+                                fontsize = 14,
+                                lbl_fontsize = 4,
+                                linewidth = 1.5,
+                                index_from_zero = True,
+                                cmds = []):
     ''' Scatter plot of examples from 2 dimensions specified by rank1 and rank2.
     '''
     # Comply with the convention (1-based index)
@@ -269,8 +306,8 @@ def plot_coeff(c, rank1, rank2, entries,
     gp = GnuplotPy3.GnuplotPy3()
     gp(f"set terminal postscript eps  size {width}, {height} \\")
     gp( "                             enhanced color \\")
-    gp( "                             font 'Helvetica,14' \\")
-    gp( "                             linewidth 1.5")
+    gp(f"                             font 'Helvetica,{fontsize}' \\")
+    gp(f"                             linewidth {linewidth}")
 
     # Declare the filename to export...
     fl_out = f"coeff_{rank1:02d}vs{rank2:02d}"
@@ -295,6 +332,9 @@ def plot_coeff(c, rank1, rank2, entries,
     gp("set size 1.0,1.0")
     ## gp("set size ratio -1")
 
+    for cmd in cmds:
+        gp(cmd)
+
     gp("plot \\")
 
     # Connecting dots
@@ -309,7 +349,7 @@ def plot_coeff(c, rank1, rank2, entries,
             gp(f"'-' using 1:2   with point linewidth 0.5 pointtype 7 pointsize 1.0 linecolor rgb '{color}' title '{name}', \\")
 
     # Label each dot
-    if label: gp(f"'-' using 1:2:3:4 with labels rotate variable offset char {offset} font ',2', \\")
+    if label: gp(f"'-' using 1:2:3:4 with labels rotate variable offset char {offset} font ',{lbl_fontsize}', \\")
 
     gp("")
 

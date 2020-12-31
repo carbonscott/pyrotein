@@ -44,32 +44,29 @@ c = c / u_ave
 
 # Count #cpu for multiprocessing (optional)...
 num_cpu = mp.cpu_count()
-num_job = num_cpu - 1
+num_job = num_cpu
 
-if 1:
+top = 30
+if 0:
     # Visualize singular values...
-    plot_singular(s, top = 20, log = True, index_from_zero = False)
+    plot_singular(s, top = top, log = True, index_from_zero = False)
 
 if 0:
     labels_TM = label_TMs()
     for k, v in labels_TM.items(): labels_TM[k] = [ i * 4 for i in v ]
 
     # Visualize a u matrix...
-    ## rank = 0
-    ## plot_left_singular(u, rank, 
-    ##                       length_mat = length_backbone, 
-    ##                       guidelines = labels_TM,
-    ##                       frac = 1.0,
-    ##                       binning = 1)
     def plot_left_singualr_by_rank(rank):
         return plot_left_singular(u, rank, 
                                      length_mat = length_backbone, 
                                      guidelines = labels_TM,
+                                     fontsize = 14,
+                                     lbl_fontsize = 14,
                                      frac = 1.0,
                                      binning = 1,
                                      index_from_zero = False)
     with mp.Pool(num_job) as proc:
-        proc.map( plot_left_singualr_by_rank, range(1, 20) )
+        proc.map( plot_left_singualr_by_rank, range(1, top) )
 
 if 0:
     # Create labels...
@@ -88,16 +85,17 @@ if 0:
                         "opsin" ]
 
     # Visualize...
-    for j in range(1, 20):
-        for i in range(j + 1,20):
+    for j in range(1, top):
+        for i in range(j + 1,top):
             rank1, rank2 = j, i
             offset = "0.5,0"
             plot_coeff(c, rank1, rank2, entries = entries, 
                                         color_items = color_items, 
                                         color_order = reaction_order,
-                                        label = False,
+                                        label = True,
                                         ## xrange = (32.0, 32.5),
                                         ## yrange = (-0.5, 0.5),
+                                        lbl_fontsize = 4,
                                         offset = offset, 
                                         rot = 0,
                                         height = 3,
@@ -105,6 +103,72 @@ if 0:
                                         index_from_zero = False)
 
 # Zoom or Rotate
+if 1:
+    # Create labels...
+    entries = ['-'.join(i[1:1+2]) for i in lines]
+
+    # Create color dictionary based on species...
+    color_items = [ i[4] for i in lines ]
+
+    # Define the color order according to a hypothesized reaction order...
+    reaction_order = [ "11-cis", "11-cis detached", "9-cis", 
+                        "batho", 
+                        "lumi", 
+                        "meta", 
+                        "unobserved",
+                        "All-trans detached",
+                        "opsin" ]
+
+    rank1, rank2 = 3, 4
+
+    # Rotate points in rank1-rank2 plane by theta...
+    theta = 335
+    gv.givens_rotation(u, s, c, rank1, rank2, theta, index_from_zero = False)
+
+    cmds = [
+           ## "unset xtics",
+           ## "unset ytics",
+           ## "unset xlabel",
+           ## "unset ylabel",
+           ## "unset border"
+           ]
+
+    offset = "0.5,0.0"
+    plot_coeff(c, rank1, rank2, entries = entries, 
+                                color_items = color_items, 
+                                color_order = reaction_order,
+                                label = True,
+                                ## xrange = (0.25, 0.75),
+                                ## yrange = (0.5, 0.9),
+                                offset = offset, 
+                                rot = 0,
+                                height = 3,
+                                width = 3,
+                                linewidth = 1.0,
+                                index_from_zero = False,
+                                cmds = cmds)
+
+# Rotate
+if 1:
+    labels_TM = label_TMs()
+    for k, v in labels_TM.items(): labels_TM[k] = [ i * 4 for i in v ]
+
+    # Visualize a u matrix...
+    def plot_left_singualr_by_rank(rank):
+        return plot_left_singular(u, rank, 
+                                     length_mat = length_backbone, 
+                                     guidelines = labels_TM,
+                                     fontsize = 14,
+                                     lbl_fontsize = 14,
+                                     frac = 1.0,
+                                     binning = 1,
+                                     index_from_zero = False)
+    num_job = 2
+    with mp.Pool(num_job) as proc:
+        proc.map( plot_left_singualr_by_rank, [rank1, rank2] )
+
+
+# Rotate
 if 0:
     # Create labels...
     entries = ['-'.join(i[1:1+2]) for i in lines]
@@ -121,30 +185,81 @@ if 0:
                         "All-trans detached",
                         "opsin" ]
 
-    rank1, rank2 = 4, 5
+    rank1, rank2 = 3, 4
 
-    ## # Rotate points in rank1-rank2 plane by theta...
-    ## theta = 90
-    ## gv.givens_rotation(u, s, c, rank1, rank2, theta)
-
+    cmds = [
+           ## "unset xtics",
+           ## "unset ytics",
+           ## "unset xlabel",
+           ## "unset ylabel",
+           ## "unset border"
+           ]
     offset = "0.5,0.0"
-    plot_coeff(c, rank1, rank2, entries = entries, 
-                                color_items = color_items, 
-                                color_order = reaction_order,
-                                label = True,
-                                xrange = (-.6, -.5),
-                                ## yrange = (-0.5, 0.5),
-                                offset = offset, 
-                                rot = 0,
-                                height = 3,
-                                width = 3,
-                                index_from_zero = False)
+
+    # Rotate points in rank1-rank2 plane by theta...
+    ## theta = 10
+    delta_theta = 5
+    for theta in range(0,360,1):
+        gv.givens_rotation(u, s, c, rank1, rank2, delta_theta, index_from_zero = False)
+
+        plot_coeff(c, rank1, rank2, entries = entries, 
+                                    color_items = color_items, 
+                                    color_order = reaction_order,
+                                    label = True,
+                                    ## xrange = (0.25, 0.75),
+                                    ## yrange = (0.5, 0.9),
+                                    offset = offset, 
+                                    rot = 0,
+                                    height = 3,
+                                    width = 3,
+                                    linewidth = 1.0,
+                                    index_from_zero = False,
+                                    cmds = cmds)
+
+        print(f"Current rotation: {delta_theta * theta:03.2f} -- ", end = "")
+        opt = input("[e]xit or any key to continue:").lower()
+        if opt == "e": break
 
 if 0:
+    labels_TM = label_TMs()
+    for k, v in labels_TM.items(): labels_TM[k] = [ i * 4 for i in v ]
+
+    # Visualize a u matrix...
     def plot_left_singualr_by_rank(rank):
         return plot_left_singular(u, rank, 
-                                     length_mat = length_backbone,
+                                     length_mat = length_backbone, 
+                                     guidelines = labels_TM,
+                                     fontsize = 14,
+                                     lbl_fontsize = 14,
                                      frac = 1.0,
-                                     binning = 1), 
+                                     binning = 1,
+                                     index_from_zero = False)
     with mp.Pool(num_job) as proc:
         proc.map( plot_left_singualr_by_rank, [rank1, rank2] )
+
+# Partial
+if 0:
+    labels_TM = label_TMs()
+    for k, v in labels_TM.items(): labels_TM[k] = [ i * 4 for i in v ]
+
+    vrange = [199, 277]
+    labels_vrange = {}
+    for i in range(vrange[0], vrange[1]):
+        labels_vrange[f"{i}"] = [ i * 4, i * 4 + 4]
+    vrange = [ len(backbone) * i for i in vrange ]
+
+    rank = 2
+    plot_left_singular(u, rank, 
+                          length_mat = length_backbone, 
+                          ## guidelines = labels_vrange,
+                          guidelines = labels_TM,
+                          showguidelines = True,
+                          width = 6,
+                          height= 7,
+                          fontsize = 14,
+                          lbl_fontsize = 14,
+                          frac = 1.0,
+                          binning = 1,
+                          ## vrange  = vrange,
+                          index_from_zero = False)
+
