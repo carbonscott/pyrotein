@@ -107,7 +107,8 @@ acids, which range from `nterm` to `cterm` in chain `chain`.
 
 ```Python
 # Obtain coordinates...
-xyzs = pr.atom.extract_backbone_xyz(atom_dict, chain, nterm, cterm)
+peptide = ["N", "CA", "C", "O"]
+xyzs = pr.atom.extract_xyz(peptide, atom_dict, chain, nterm, cterm)
 ```
 
 ### Distance matrix
