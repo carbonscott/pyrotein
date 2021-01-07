@@ -5,8 +5,7 @@ import pyrotein as pr
 import numpy as np
 import colorsimple as cs
 import GnuplotPy3
-import random
-import math
+import os
 
 
 def plot_dmat(
@@ -17,7 +16,7 @@ def plot_dmat(
     width         = 6,     # inch
     height        = 7,     # inch
     fontsize      = 14,    # pt
-    linewidth     = 1.5,   # pt
+    linewidth     = 1.0,   # pt
     palette       = "",    # Palette definition
     intst_min     = "0",   # Min intensity value
     intst_max     = "*",   # Max intensity value
@@ -82,12 +81,12 @@ def plot_dmat(
     gp(f"set yrange [{intst_column_mean_min}:{intst_column_mean_max}]")
     gp("set key top right")
 
-    if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth 0.5 linecolor rgb 'black'")
+    if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth 1.0 linecolor rgb 'black'")
 
     for cmd in cmds_top:
         gp(cmd)
 
-    gp(f"plot '-' using 1:2 with lines linewidth 0.5 linecolor rgb 'black' title 'Column mean'")
+    gp(f"plot '-' using 1:2 with lines linewidth 1.0 linecolor rgb 'black' title 'Column mean'")
     for i,v in enumerate(column_mean_dmat):
         gp(f"{i} {v}")
     gp("e")
@@ -146,20 +145,32 @@ def plot_dmat(
     gp("e")
     gp("exit")
 
+    return None
 
 
 
-def plot_singular(s, top = 3, fl_export = "singular", log = False, index_from_zero = True):
+
+def plot_singular(s, top = 3, fl_export = "singular", 
+                              width = 5.65, 
+                              height = 5.65,
+                              fontsize = 16,
+                              linewidth = 1,
+                              pointsize = 2,
+                              ticscale  = 1.0,
+                              log = False, index_from_zero = True):
     ''' Plot singular values.
     '''
     index_base = 0 if index_from_zero else 1
 
     gp = GnuplotPy3.GnuplotPy3()
 
-    gp("set terminal postscript eps  size 3.5, 2.62 \\")
-    gp("                             enhanced color \\")
-    gp("                             font 'Helvetica,14' \\")
-    gp("                             linewidth 1.5")
+    gp(f"set terminal postscript eps  size {width}, {height} \\")
+    gp(f"                             enhanced color \\")
+    gp(f"                             font 'Helvetica,{fontsize}' \\")
+    gp(f"                             linewidth {linewidth}")
+
+    # Set ticscale...
+    gp(f"set tic scale {ticscale}")
 
     # Declare the filename to export...
     gp(f"set output '{fl_export}.eps'")
@@ -171,7 +182,7 @@ def plot_singular(s, top = 3, fl_export = "singular", log = False, index_from_ze
     gp("set ylabel 'Singular values'")
     gp("plot \\")
     for c in ("#0AFF00", "#000000"):
-        gp(f"'-' using 1:2 with points pointtype 7 linewidth 1 linecolor rgb '{c}' notitle, \\")
+        gp(f"'-' using 1:2 with points pointsize {pointsize} pointtype 7 linewidth 1 linecolor rgb '{c}' notitle, \\")
     gp("'-' using 1:2 with lines linewidth 1 linecolor rgb '#000000' notitle, \\")
     gp("")
 
@@ -186,6 +197,8 @@ def plot_singular(s, top = 3, fl_export = "singular", log = False, index_from_ze
     gp("e")
     gp("exit")
 
+    return None
+
 
 
 
@@ -194,11 +207,13 @@ def plot_left_singular(u, rank, length_mat,
                                 showguidelines  = True,
                                 width           = 6,
                                 height          = 7,
+                                linewidth       = 1.0,
                                 fontsize        = 14,
-                                lbl_fontsize   = 10,
+                                lbl_fontsize    = 10,
                                 vrange          = [],
                                 frac            = 0.1, 
                                 binning         = 4, 
+                                fl_path            = '.', 
                                 index_from_zero = True):
     ''' Plot left singular value as a lower triangular distance matrix.
     '''
@@ -218,7 +233,7 @@ def plot_left_singular(u, rank, length_mat,
               1 'white'  , 5 'blue', 10 'navy')"
 
     # Filename to export...
-    fl_export = f"u{rank:02d}"
+    fl_export = os.path.join(fl_path, f"u{rank:02d}")
 
     # Bin image???
     dmat_bin = dmat_full
@@ -237,21 +252,21 @@ def plot_left_singular(u, rank, length_mat,
     if len(guidelines) > 0: 
         for k, (b,e) in guidelines.items():
             # Vertical lines (beginning of a region)
-            cmd = f"set arrow front from {b-1},graph 0 to {b-1},graph 1 nohead dashtype 2 linewidth 0.5 linecolor rgb '{color_guideline}'"
+            cmd = f"set arrow front from {b-1},graph 0 to {b-1},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_guideline}'"
             cmds_guideline_bottom.append(cmd)
             cmds_guideline_top.append(cmd)
 
             # Vertical lines (end of a region)
-            cmd = f"set arrow front from {e-1},graph 0 to {e-1},graph 1 nohead dashtype 2 linewidth 0.5 linecolor rgb '{color_guideline}'"
+            cmd = f"set arrow front from {e-1},graph 0 to {e-1},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_guideline}'"
             cmds_guideline_bottom.append(cmd)
             cmds_guideline_top.append(cmd)
 
             # Horizontal lines (beginning of a region)
-            cmd = f"set arrow front from graph 0,first {b-1} to graph 1,first {b-1} nohead dashtype 2 linewidth 0.5 linecolor rgb '{color_guideline}'"
+            cmd = f"set arrow front from graph 0,first {b-1} to graph 1,first {b-1} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_guideline}'"
             cmds_guideline_bottom.append(cmd)
 
             # Horizontal lines (end of a region)
-            cmd = f"set arrow front from graph 0,first {e-1} to graph 1,first {e-1} nohead dashtype 2 linewidth 0.5 linecolor rgb '{color_guideline}'"
+            cmd = f"set arrow front from graph 0,first {e-1} to graph 1,first {e-1} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_guideline}'"
             cmds_guideline_bottom.append(cmd)
 
             # Put labels on the diagonal...
@@ -270,12 +285,15 @@ def plot_left_singular(u, rank, length_mat,
               width         = width,     # inch
               height        = height,     # inch
               fontsize      = fontsize,
+              linewidth     = linewidth,
               palette       = pal, 
               upper         = intst_min - 1,
               smooth        = True,
               vrange        = vrange,
               cmds_top      = cmds_guideline_top,
               cmds_bottom   = cmds_guideline_bottom)
+
+    return None
 
 
 
@@ -288,11 +306,13 @@ def plot_coeff(c, rank1, rank2, entries,
                                 yrange = ("*", "*"),
                                 offset = '2.0,0.0',
                                 rot = 0,
-                                height = 3,
-                                width = 3,
-                                fontsize = 14,
+                                height = 6,
+                                width = 6,
+                                fontsize = 16,
                                 lbl_fontsize = 4,
-                                linewidth = 1.5,
+                                linewidth = 1.0,
+                                pointsize = 1.0,
+                                fl_path = '.', 
                                 index_from_zero = True,
                                 cmds = []):
     ''' Scatter plot of examples from 2 dimensions specified by rank1 and rank2.
@@ -310,7 +330,7 @@ def plot_coeff(c, rank1, rank2, entries,
     gp(f"                             linewidth {linewidth}")
 
     # Declare the filename to export...
-    fl_out = f"coeff_{rank1:02d}vs{rank2:02d}"
+    fl_out = os.path.join(fl_path, f"coeff_{rank1:02d}vs{rank2:02d}")
 
     # Zoom???
     range_default = ("*", "*")
@@ -338,15 +358,15 @@ def plot_coeff(c, rank1, rank2, entries,
     gp("plot \\")
 
     # Connecting dots
-    gp(f"'-' using 1:2 with lines linewidth 0.5 linecolor rgb '#999999', \\")
+    gp(f"'-' using 1:2 with lines linewidth 1.0 linecolor rgb '#999999', \\")
 
     # Generate biolerplate code for Gnuplot
     color_dict = cs.color_species(color_order)
     for name, color in color_dict.items():
         if label:
-            gp(f"'-' using 1:2   with point linewidth 0.5 pointtype 6 pointsize 0.8 linecolor rgb '{color}' title '{name}', \\")
+            gp(f"'-' using 1:2   with point linewidth 1.0 pointtype 6 pointsize {pointsize} linecolor rgb '{color}' title '{name}', \\")
         else:
-            gp(f"'-' using 1:2   with point linewidth 0.5 pointtype 7 pointsize 1.0 linecolor rgb '{color}' title '{name}', \\")
+            gp(f"'-' using 1:2   with point linewidth 1.0 pointtype 7 pointsize {pointsize} linecolor rgb '{color}' title '{name}', \\")
 
     # Label each dot
     if label: gp(f"'-' using 1:2:3:4 with labels rotate variable offset char {offset} font ',{lbl_fontsize}', \\")
@@ -380,4 +400,4 @@ def plot_coeff(c, rank1, rank2, entries,
 
     gp("exit")
 
-    ## cs.color_table(color_dict)
+    return None
