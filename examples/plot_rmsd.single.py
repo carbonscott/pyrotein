@@ -41,5 +41,25 @@ for i_fl, line in enumerate(lines[-6:-1]):
     dmat = pr.distance.calc_dmat(xyzs, xyzs)
     dmats[i_fl, :, :] = dmat[:, :]
 
-rmsd_dmat = pr.distance.calc_rmsd_mats(dmats)
-np.save("rmsd_dmat.npy", rmsd_dmat)
+    ## # Export eps...
+    ## dmat_bin = np.array(pr.utils.bin_image(dmat, binning = 10, nan_replace = np.nan))
+    fl_dmat = f"{pdb}.{chain}.dmat"
+    pal = "set palette defined ( 0 'yellow', 0 'white', 0.5 'blue', 1 'navy' )"
+    ## plot_dmat(dmat_bin, fl_dmat, lbl = {}, palette = pal, smooth = True)
+    plot_simple_dmat( dmat, 
+           fl_dmat, 
+           width = 12,
+           height = 12,
+           fontsize = 29,
+           lbl = {},
+           lbl_fontsize = 29,
+           linewidth = 2.0,
+           palette = pal,
+           intst_max = "*",
+           upper = np.nanmax(dmat) * 0.0125,
+           smooth = False,
+         )
+
+
+## rmsd_dmat = pr.distance.calc_rmsd_mats(dmats)
+## np.save("rmsd_dmat.npy", rmsd_dmat)
