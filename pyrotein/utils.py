@@ -15,7 +15,7 @@ def bin_image(img_orig, binning = 4, mode = 1, nan_replace = 0):
             for j in range(0, X, binning):
                 sub_img = img_orig[i : min(i + binning, Y), j : min(j + binning, X)]
                 if np.all(np.isnan(sub_img)):
-                    img_bin(append( (i, j, 0) ))
+                    img_bin(append( (i, j, nan_replace) ))
                 else:
                     img_bin.append( (i, j, np.nanmean(sub_img)) )
 
