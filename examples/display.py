@@ -254,6 +254,7 @@ def plot_singular(s, top = 3, fl_export = "singular",
                               linewidth = 1,
                               pointsize = 2,
                               ticscale  = 1.0,
+                              fl_path   = '.',
                               log = False, index_from_zero = True):
     ''' Plot singular values.
     '''
@@ -270,6 +271,7 @@ def plot_singular(s, top = 3, fl_export = "singular",
     gp(f"set tic scale {ticscale}")
 
     # Declare the filename to export...
+    fl_export = os.path.join(fl_path, fl_export)
     gp(f"set output '{fl_export}.eps'")
     gp("unset key")
 
@@ -310,7 +312,13 @@ def plot_left_singular(u, rank, length_mat,
                                 vrange          = [],
                                 frac            = 0.1, 
                                 binning         = 4, 
-                                fl_path            = '.', 
+                                fl_path         = '.', 
+                                intst_min       = None,
+                                intst_max       = None,
+                                cmds_top        = [""],
+                                cmds_bottom     = [""],
+                                smooth          = False,
+                                fl_postfix      = '',
                                 index_from_zero = True):
     ''' Plot left singular value as a lower triangular distance matrix.
     '''
@@ -330,7 +338,7 @@ def plot_left_singular(u, rank, length_mat,
               1 'white'  , 5 'blue', 10 'navy')"
 
     # Filename to export...
-    fl_export = os.path.join(fl_path, f"u{rank:02d}")
+    fl_export = os.path.join(fl_path, f"u{rank:02d}" + fl_postfix)
 
     # Bin image???
     dmat_bin = dmat_full
@@ -338,8 +346,8 @@ def plot_left_singular(u, rank, length_mat,
 
     # Find the full range...
     bound = np.max(np.abs([np.min(dmat_bin), np.max(dmat_bin)]))
-    intst_min = -bound * frac
-    intst_max =  bound * frac
+    intst_min = -bound * frac if intst_min == None else intst_min
+    intst_max =  bound * frac if intst_max == None else intst_max
 
     # Draw guidelines (optional)...
     lbls = {}
@@ -372,6 +380,10 @@ def plot_left_singular(u, rank, length_mat,
         cmds_guideline_top = []
         cmds_guideline_bottom = []
 
+    # Extends the commands...
+    cmds_guideline_top.extend(cmds_top)
+    cmds_guideline_bottom.extend(cmds_bottom)
+
     # Visualization...
     plot_dmat(dmat_bin, 
               fl_export, 
@@ -385,8 +397,8 @@ def plot_left_singular(u, rank, length_mat,
               linewidth     = linewidth,
               palette       = pal, 
               upper         = intst_min - 1,
-              smooth        = True,
               vrange        = vrange,
+              smooth        = smooth,
               cmds_top      = cmds_guideline_top,
               cmds_bottom   = cmds_guideline_bottom)
 
@@ -449,7 +461,7 @@ def plot_coeff(c, rank1, rank2, entries,
     gp(f"set xlabel 'c_{{{rank1:02d}}} (\305)'")
     gp(f"set ylabel 'c_{{{rank2:02d}}} (\305)'")
     gp("set size 1.0,1.0")
-    ## gp("set size ratio -1")
+    gp("set size ratio -1")
 
     for cmd in cmds:
         gp(cmd)

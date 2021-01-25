@@ -53,15 +53,18 @@ num_cpu = mp.cpu_count() // 2
 
 # Define a series of rotation...
 rotations = [
-    ## [2, 3,  22.5],
-    [2, 3,  10.5],
-    ## [2, 5,  30.0],
-    [2, 5,  40.0],
-    [3, 4, -10.0],
-    [7, 8,  48.0],
+    [2, 3,  17.5],
+    [2, 5,  20.0],
+    [3, 4, -0.0],
     [4, 5,  10],
-    [5, 6,  30],
+    [5, 6,  -32],
     [4, 6,  10],
+    [8, 7,  -15],
+    [8, 3,  6],
+    [5, 7,  20],
+    [2, 7,  -20],
+    [6, 7,  -15],
+    [8, 9,  20],
 ]
 for rank1, rank2, theta in rotations:
     gv.givens_rotation(u, s, c, rank1, rank2, theta, index_from_zero = False)
@@ -106,7 +109,7 @@ if 1:
                       fontsize = 28,
                       linewidth = 2.0,
                       ticscale  = 2.0,
-                      fl_path = f'eps_svd',
+                      fl_path = f'eps_svd.rot',
                       index_from_zero = False)
 
     if 1:
@@ -128,27 +131,31 @@ if 1:
                                             fontsize = 25,
                                             pointsize = 2.0,
                                             linewidth = 1.0,
-                                            fl_path = f'eps_svd',
-                                            fl_postfix = f'.',
+                                            fl_path = f'eps_svd.rot',
+                                            fl_postfix = f'',
                                             index_from_zero = False,
                                             cmds = cmds)
 
     if 0:
-        # Visualize a u matrix...
-        def plot_left_singualr_by_rank(rank):
-            return plot_left_singular(u, rank, 
-                                         length_mat = length_backbone, 
-                                         guidelines = labels_TM,
-                                         width = 10,
-                                         height = 12,
-                                         fontsize = 29,
-                                         lbl_fontsize = 29,
-                                         linewidth = 2.0,
-                                         frac = 1.0,
-                                         binning = 1,
-                                         fl_path = "eps_svd",
-                                         fl_postfix = f'.',
-                                         index_from_zero = False)
-        num_job = np.min([top, num_cpu])
-        with mp.Pool(num_job) as proc:
-            proc.map( plot_left_singualr_by_rank, range(1, top) )
+        offset = "0.5,0.0"
+        j = 2
+        for i in range(j + 1,top):
+            rank1, rank2 = j, i
+            plot_coeff(c, rank2, rank1, entries = entries, 
+                                        color_items = color_items, 
+                                        color_order = reaction_order,
+                                        label = True,
+                                        lbl_fontsize = 10,
+                                        ## xrange = (0.25, 0.75),
+                                        ## yrange = (0.5, 0.9),
+                                        offset = offset, 
+                                        rot = 0,
+                                        height = 6,
+                                        width = 6,
+                                        fontsize = 25,
+                                        pointsize = 2.0,
+                                        linewidth = 1.0,
+                                        fl_path = f'eps_svd.rot',
+                                        fl_postfix = f'.v',
+                                        index_from_zero = False,
+                                        cmds = cmds)
