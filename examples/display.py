@@ -21,7 +21,6 @@ def plot_dmat(
     intst_min     = "0",   # Min intensity value
     intst_max     = "*",   # Max intensity value
     smooth        = False, # Choices of styles: smooth vs pixelated
-    upper         = 0.5,   # The value to facilitate the plot of lower triangle matrix
     vrange        = [],
     showzero      = True,
     cmds_top      = [],    # Customized command for upper panel
@@ -140,7 +139,7 @@ def plot_dmat(
             if len(vrange) == 2: 
                 if vrange[1] < j or j < vrange[0]: continue
             if j > k: gp(f"{k} {j} {dmat[j, k]}")
-            else: gp(f"{k} {j} {upper}")
+            else: gp(f"{k} {j} NaN")
         gp(" ")
     gp("e")
     gp("exit")
@@ -161,7 +160,6 @@ def plot_simple_dmat(
     intst_min     = "0",   # Min intensity value
     intst_max     = "*",   # Max intensity value
     smooth        = False, # Choices of styles: smooth vs pixelated
-    upper         = 0.5,   # The value to facilitate the plot of lower triangle matrix
     vrange        = [],
     showzero      = True,
     cmds_top      = [],    # Customized command for upper panel
@@ -239,7 +237,7 @@ def plot_simple_dmat(
             if len(vrange) == 2: 
                 if vrange[1] < j or j < vrange[0]: continue
             if j > k: gp(f"{k} {j} {dmat[j, k]}")
-            else: gp(f"{k} {j} {upper}")
+            else: gp(f"{k} {j} NaN")
         gp(" ")
     gp("e")
     gp("exit")
@@ -396,7 +394,6 @@ def plot_left_singular(u, rank, length_mat,
               fontsize      = fontsize,
               linewidth     = linewidth,
               palette       = pal, 
-              upper         = intst_min - 1,
               vrange        = vrange,
               smooth        = smooth,
               cmds_top      = cmds_guideline_top,
