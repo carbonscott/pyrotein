@@ -6,6 +6,7 @@ import numpy as np
 import colorsimple as cs
 import GnuplotPy3
 import os
+import tempfile
 
 
 def plot_dmat(
@@ -20,7 +21,6 @@ def plot_dmat(
     palette       = "",    # Palette definition
     intst_min     = "0",   # Min intensity value
     intst_max     = "*",   # Max intensity value
-    smooth        = False, # Choices of styles: smooth vs pixelated
     vrange        = [],
     showzero      = True,
     cmds_top      = [],    # Customized command for upper panel
@@ -37,13 +37,21 @@ def plot_dmat(
 
     # [[[ Visualize ]]]
     num_items = len(dmat)
-    smooth = False
     if intst_max == "*":
         intst_min = np.nanmin(dmat)
         intst_max = np.nanmax(dmat)
     intst_column_mean_min = np.min( [np.nanmin(column_mean_dmat), 0] )
     intst_column_mean_max = np.max( [np.nanmax(column_mean_dmat), 0] )
 
+    # Create tempfile to visualize half matrix...
+    fl_temp = tempfile.mktemp(".temp.dat")
+    with open(fl_temp,'w') as fh:
+        for j in range(num_items):
+            for k in range(j):
+                fh.write(f"{k} {j} {dmat[j, k]}\n")
+            fh.write("\n")
+
+    # Begin Gnuplot
     gp = GnuplotPy3.GnuplotPy3()
     gp(f"set terminal postscript eps  size {width}, {height} \\")
     gp(f"                             enhanced color \\")
@@ -73,7 +81,7 @@ def plot_dmat(
     gp("set origin 0,0.70")
     gp("set size   1,0.15")
     gp("set tmargin 0")
-    gp("set bmargin 0")
+    gp("set bmargin at screen 0.70")
     gp("set lmargin at screen 0.10")
     gp("set rmargin at screen 0.85")
     gp(f"set xrange [-1:{num_items}]")
@@ -99,17 +107,18 @@ def plot_dmat(
     gp(f"unset xtics")
     gp(f"unset ytics")
     gp(f"unset logscale")
+    gp("unset bmargin")
+    gp("unset tmargin")
+    gp("unset lmargin")
+    gp("unset rmargin")
     gp("set origin 0,0.0")
     gp("set size   1.0,0.70")
-    ## gp("set size ratio -1")
-    gp("set tmargin 0")
+    gp("set tmargin at screen 0.7")
     gp("set bmargin at screen 0.05")
     gp("set lmargin at screen 0.10")
     gp("set rmargin at screen 0.85")
     gp(f"set xrange [-1          :{num_items}   ]")
     gp(f"set yrange [{num_items}   :-1          ]")
-    gp("set lmargin at screen 0.10")
-    gp("set rmargin at screen 0.85")
 
     for k, (x, y) in lbl.items():
         gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {lbl_fontsize}' front")
@@ -123,25 +132,9 @@ def plot_dmat(
     for cmd in cmds_bottom:
         gp(cmd)
 
-    if smooth:
-        gp("set pm3d map")
-        gp("set pm3d interpolate 0,0")
-        gp("set lmargin at screen 0.01")
-        gp("set rmargin at screen 0.99")
-        gp("set bmargin at screen 0.05")
-        gp("set tmargin at screen 0.95")
-        gp("splot '-' using 1:2:3")
-    else: 
-        gp("plot '-' using 1:2:3 with image")
+    gp("set view map")
+    gp(f"splot '{fl_temp}' using 1:2:3 with pm3d")
 
-    for j in range(num_items):
-        for k in range(num_items):
-            if len(vrange) == 2: 
-                if vrange[1] < j or j < vrange[0]: continue
-            if j > k: gp(f"{k} {j} {dmat[j, k]}")
-            else: gp(f"{k} {j} NaN")
-        gp(" ")
-    gp("e")
     gp("exit")
 
     return None
@@ -315,7 +308,6 @@ def plot_left_singular(u, rank, length_mat,
                                 intst_max       = None,
                                 cmds_top        = [""],
                                 cmds_bottom     = [""],
-                                smooth          = False,
                                 fl_postfix      = '',
                                 index_from_zero = True):
     ''' Plot left singular value as a lower triangular distance matrix.
@@ -332,7 +324,7 @@ def plot_left_singular(u, rank, length_mat,
     # Define a color palette...
     # Colorscheme is inspired by [this paper](https://academic.oup.com/nar/article/44/15/7457/2457750)
     pal = "set palette defined \
-           (-10.001 'white', -10 '#800000', -5 'red', -1 'white', 0 'seagreen', \
+           (-10 '#800000', -5 'red', -1 'white', 0 'seagreen', \
               1 'white'  , 5 'blue', 10 'navy')"
 
     # Filename to export...
@@ -395,7 +387,6 @@ def plot_left_singular(u, rank, length_mat,
               linewidth     = linewidth,
               palette       = pal, 
               vrange        = vrange,
-              smooth        = smooth,
               cmds_top      = cmds_guideline_top,
               cmds_bottom   = cmds_guideline_bottom)
 
