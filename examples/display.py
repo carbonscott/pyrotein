@@ -23,6 +23,7 @@ def plot_dmat(
     intst_max     = "*",   # Max intensity value
     vrange        = [],
     showzero      = True,
+    showcolorbox  = True,
     cmds_top      = [],    # Customized command for upper panel
     cmds_bottom   = [],    # Customized command for bottom panel
     ):
@@ -128,6 +129,7 @@ def plot_dmat(
     else:
         gp(palette)
     gp(f"set cbrange [{intst_min}:{intst_max}]")
+    if not showcolorbox: gp(f"unset colorbox")
 
     for cmd in cmds_bottom:
         gp(cmd)
