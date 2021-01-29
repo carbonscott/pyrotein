@@ -400,6 +400,8 @@ def plot_left_singular(u, rank, length_mat,
 def plot_coeff(c, rank1, rank2, entries,
                                 color_items,
                                 color_order,
+                                color_saturation = 50,
+                                color_value      = 100,
                                 label = True,
                                 xrange = ("*", "*"),
                                 yrange = ("*", "*"),
@@ -462,7 +464,7 @@ def plot_coeff(c, rank1, rank2, entries,
     gp(f"'-' using 1:2 with lines linewidth 1.0 linecolor rgb '#999999', \\")
 
     # Generate biolerplate code for Gnuplot
-    color_dict = cs.color_species(color_order)
+    color_dict = cs.color_species(color_order, color_saturation, color_value)
     for name, color in color_dict.items():
         if label:
             gp(f"'-' using 1:2   with point linewidth 1.0 pointtype 6 pointsize {pointsize} linecolor rgb '{color}' title '{name}', \\")

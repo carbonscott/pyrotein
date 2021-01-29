@@ -40,6 +40,8 @@ vh    = np.load("vh.npy")
 # Allow positive value that fits the distance in nature (optinal)...
 reverse_sign(u, vh, 1, index_from_zero = False)
 reverse_sign(u, vh, 2, index_from_zero = False)
+reverse_sign(u, vh, 4, index_from_zero = False)
+reverse_sign(u, vh, 6, index_from_zero = False)
 
 # Calculate the coefficients...
 c = np.matmul(np.diag(s), vh)
@@ -53,18 +55,27 @@ num_cpu = mp.cpu_count() // 2
 
 # Define a series of rotation...
 rotations = [
-    [2, 3,  17.5],
-    [2, 5,  20.0],
-    [3, 4, -0.0],
-    [4, 5,  10],
-    [5, 6,  -32],
+    [2, 3,  28.6],
+    [3, 4, -2.0],
+    [4, 5,  -20],
+    [5, 6,   40],
+    [7, 8,   20],
+
+    [2, 4,   0],
+    [3, 5,  -4],
     [4, 6,  10],
-    [8, 7,  -15],
-    [8, 3,  6],
     [5, 7,  20],
+    [6, 8, -8.5],
+
+    [2, 5,  20],
+
+    [3, 8,  -4],
     [2, 7,  -20],
-    [6, 7,  -15],
-    [8, 9,  20],
+    [6, 7,   18],
+    [8, 9,  26],
+    [3, 7,  -20],
+    [6, 9,  -30],
+    [2, 6,   2.5],
 ]
 for rank1, rank2, theta in rotations:
     gv.givens_rotation(u, s, c, rank1, rank2, theta, index_from_zero = False)
@@ -80,10 +91,13 @@ for k, v in labels_TM.items(): labels_TM[k] = [ i * 4 for i in v ]
 color_items = [ i[4] for i in lines ]
 
 # Define the color order according to a hypothesized reaction order...
-reaction_order = [ "11-cis", "11-cis detached", "9-cis", 
+reaction_order = [ "11-cis", "11-cis detached", 
+                    "unobserved", 
+                    "9-cis", 
+                    "13-cis",
+                    "6mr",
                     "batho", 
                     "lumi", 
-                    "unobserved",
                     "All-trans detached",
                     "meta", 
                     "opsin" ]
@@ -119,6 +133,8 @@ if 1:
                 rank1, rank2 = j, i
                 plot_coeff(c, rank1, rank2, entries = entries, 
                                             color_items = color_items, 
+                                            color_saturation = 60,
+                                            color_value = 100,
                                             color_order = reaction_order,
                                             label = True,
                                             lbl_fontsize = 10,
@@ -144,6 +160,8 @@ if 1:
             plot_coeff(c, rank2, rank1, entries = entries, 
                                         color_items = color_items, 
                                         color_order = reaction_order,
+                                        color_saturation = 80,
+                                        color_value = 100,
                                         label = True,
                                         lbl_fontsize = 10,
                                         ## xrange = (0.25, 0.75),
