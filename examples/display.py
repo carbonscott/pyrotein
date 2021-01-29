@@ -397,12 +397,9 @@ def plot_left_singular(u, rank, length_mat,
 
 
 
-def plot_coeff(c, rank1, rank2, entries,
-                                color_items,
-                                color_order,
-                                color_saturation = 50,
-                                color_value      = 100,
+def plot_coeff(c, rank1, rank2, plot_dict = {},
                                 label = True,
+                                labeltext = [],
                                 xrange = ("*", "*"),
                                 yrange = ("*", "*"),
                                 offset = '2.0,0.0',
@@ -425,82 +422,112 @@ def plot_coeff(c, rank1, rank2, entries,
     assert rank1_in_data >= 0, "Wrong value for rank1 (base-0 or base-1, is the input index correct?)"
     assert rank2_in_data >= 0, "Wrong value for rank2 (base-0 or base-1, is the input index correct?)"
 
+    if len(plot_dict): 
+        gp = GnuplotPy3.GnuplotPy3()
+        gp(f"set terminal postscript eps  size {width}, {height} \\")
+        gp( "                             enhanced color \\")
+        gp(f"                             font 'Helvetica,{fontsize}' \\")
+        gp(f"                             linewidth {linewidth}")
+
+        # Declare the filename to export...
+        fl_name = f"coeff_{rank1:02d}vs{rank2:02d}" + fl_postfix
+        fl_out = os.path.join(fl_path, fl_name)
+
+        # Zoom???
+        range_default = ("*", "*")
+        if xrange != range_default  or \
+           yrange != range_default: fl_out = f"{fl_out}.zoom"
+
+        # Label???
+        if not label: fl_out = f"{fl_out}.nolabel"
+
+        # Decide the final filename
+        gp(f"set output '{fl_out}.eps'")
+        gp("unset key")
+
+        gp(f"set xrange [{xrange[0]}:{xrange[1]}]")
+        gp(f"set yrange [{yrange[0]}:{yrange[1]}]")
+
+        gp(f"set xlabel 'c_{{{rank1:02d}}} (\305)'")
+        gp(f"set ylabel 'c_{{{rank2:02d}}} (\305)'")
+        gp("set size 1.0,1.0")
+        gp("set size ratio -1")
+
+        for cmd in cmds:
+            gp(cmd)
+
+        # Plot style...
+        gp("plot \\")
+        for k, v in plot_dict.items(): gp(" '-' " + v["style"] + ", \\")
+
+        # Label each dot
+        if label: gp(f" '-' using 1:2:3:4 with labels rotate variable offset char {offset} font ',{lbl_fontsize}', \\")
+
+        # End plot style
+        gp("")
+
+        # Plot entry...
+        for k, v in plot_dict.items():
+            for i in v["entry"]:
+                gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]}")
+            gp("e")
+
+        if label:
+            # Label each dot that is colored only (even thought it's selected from metadata)
+            for i, point_label in enumerate(labeltext):
+                gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]} {point_label} {rot}")  
+            gp("e")
+
+        gp("exit")
+    else:
+        print("Nothing to plot!!!")
+
+    return None
+
+
+
+
+def plot_blankcoeff(rank1, width, height, fl_path, fl_postfix, index_from_zero = True):
+    # Comply with the convention (1-based index)
+    rank1_in_data = rank1 if index_from_zero else rank1 - 1
+    assert rank1_in_data >= 0, "Wrong value for rank1 (base-0 or base-1, is the input index correct?)"
+
     gp = GnuplotPy3.GnuplotPy3()
     gp(f"set terminal postscript eps  size {width}, {height} \\")
     gp( "                             enhanced color \\")
-    gp(f"                             font 'Helvetica,{fontsize}' \\")
-    gp(f"                             linewidth {linewidth}")
+    gp(f"                             font 'Helvetica,14' \\")
+    gp(f"                             linewidth 2")
 
     # Declare the filename to export...
-    fl_name = f"coeff_{rank1:02d}vs{rank2:02d}" + fl_postfix
+    fl_name = f"coeff_{rank1:02d}vs{rank1:02d}" + fl_postfix
     fl_out = os.path.join(fl_path, fl_name)
-
-    # Zoom???
-    range_default = ("*", "*")
-    if xrange != range_default  or \
-       yrange != range_default: fl_out = f"{fl_out}.zoom"
-
-    # Label???
-    if not label: fl_out = f"{fl_out}.nolabel"
 
     # Decide the final filename
     gp(f"set output '{fl_out}.eps'")
     gp("unset key")
-
-    gp(f"set xrange [{xrange[0]}:{xrange[1]}]")
-    gp(f"set yrange [{yrange[0]}:{yrange[1]}]")
-
-    gp(f"set xlabel 'c_{{{rank1:02d}}} (\305)'")
-    gp(f"set ylabel 'c_{{{rank2:02d}}} (\305)'")
-    gp("set size 1.0,1.0")
-    gp("set size ratio -1")
-
-    for cmd in cmds:
-        gp(cmd)
+    gp("set xrange [1:2]")
+    gp("set yrange [1:2]")
+    gp("unset border")
+    gp("unset xtics")
+    gp("unset ytics")
 
     gp("plot \\")
-
-    # Connecting dots
-    gp(f"'-' using 1:2 with lines linewidth 1.0 linecolor rgb '#999999', \\")
-
-    # Generate biolerplate code for Gnuplot
-    color_dict = cs.color_species(color_order, color_saturation, color_value)
-    for name, color in color_dict.items():
-        if label:
-            gp(f"'-' using 1:2   with point linewidth 1.0 pointtype 6 pointsize {pointsize} linecolor rgb '{color}' title '{name}', \\")
-        else:
-            gp(f"'-' using 1:2   with point linewidth 1.0 pointtype 7 pointsize {pointsize} linecolor rgb '{color}' title '{name}', \\")
-
-    # Label each dot
-    if label: gp(f"'-' using 1:2:3:4 with labels rotate variable offset char {offset} font ',{lbl_fontsize}', \\")
-
+    gp(f"'-' using 1:2 with points pointtype 7 notitle,\\")
     gp("")
 
-    # Connecting dots
-    last_pdb = entries[0][:4]
-    for i in range(len(c[0])): 
-        curr_pdb = entries[i][:4]
-        if last_pdb != curr_pdb: gp("")
-        gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]}")
-        last_pdb = curr_pdb
-    gp("e")
-
-    # The plot statement addressing plot by colors
-    for k in color_dict.keys():
-        for i in range(len(c[0])): 
-            if color_items[i] == k:
-                gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]}")  
-        gp("e")
-
-    if label:
-        # Label each dot that is colored only (even thought it's selected from metadata)
-        for k in color_dict.keys():
-            for i in range(len(c[0])): 
-                if color_items[i] == k:
-                    point_label = entries[i]
-                    gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]} {point_label} {rot}")  
-        gp("e")
-
+    gp(f"0 0")
+    gp( "e")
     gp("exit")
 
     return None
+
+
+
+
+def select_items(lines, col, offset = 0):
+    citems = {}
+    for i, v in enumerate(lines):
+        val = v[col]
+        if not val in citems: citems[val] = [i + offset]
+        else: citems[val].append(i + offset)
+    return citems

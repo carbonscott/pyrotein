@@ -4,7 +4,8 @@
 import numpy as np
 import pyrotein as pr
 import givens as gv
-from display import plot_dmat, plot_singular, plot_left_singular, plot_coeff
+from display import plot_dmat, plot_singular, plot_left_singular, \
+                    plot_coeff, select_items, plot_blankcoeff
 import multiprocessing as mp
 from loaddata import load_xlsx, label_TMs
 import colorsimple as cs
@@ -80,15 +81,9 @@ rotations = [
 for rank1, rank2, theta in rotations:
     gv.givens_rotation(u, s, c, rank1, rank2, theta, index_from_zero = False)
 
-# Create labels...
-entries = ['-'.join(i[1:1+2]) for i in lines]
-
 # Create labels for u...
 labels_TM = label_TMs()
 for k, v in labels_TM.items(): labels_TM[k] = [ i * 4 for i in v ]
-
-# Create color dictionary based on species...
-color_items = [ i[4] for i in lines ]
 
 # Define the color order according to a hypothesized reaction order...
 reaction_order = [ "11-cis", "11-cis detached", 
@@ -101,6 +96,44 @@ reaction_order = [ "11-cis", "11-cis detached",
                     "All-trans detached",
                     "meta", 
                     "opsin" ]
+
+
+# [[[ Customize ploting style ]]]
+# Create style dictionary based on species...
+coloritems = {}
+coloritems["retinal"]  = {}
+coloritems["methods"]  = {}
+coloritems["comments"] = {}
+coloritems["retinal"]  = select_items(lines, 4)
+coloritems["methods"]  = select_items(lines, 9)
+coloritems["comments"] = select_items(lines, 10)
+
+# Define color by dividing the colorwheel...
+reaction_colors_dict = cs.color_species(reaction_order, hexsym = "#")
+
+# Assemble Gnuplot codes...
+# retinal type
+gps_dict = {}
+for k, v in reaction_colors_dict.items():
+    gps_dict[k] = { 
+        "style" : "u 1:2 w p pt 7 ps 1 lc rgb '%s' title '%s'" % (v, k),
+        "entry" : coloritems["retinal"][k]
+    }
+
+# Add support for EM structures
+gps_dict["EM"] = {
+    "style" : "u 1:2 w p pt 7 ps 0.4 lw 1 lc rgb 'black' title 'EM'",
+    "entry" : coloritems["methods"]["Single particle EM"],
+}
+
+# Add support for stablized opsin
+gps_dict["Bound to RS"] = {
+    "style" : "u 1:2 w p pt 4 ps 0.4 lw 0.4 lc rgb 'black' title 'Bound to RS'",
+    "entry" : coloritems["comments"]["Stabilizer"],
+}
+
+# Create labels...
+entries = ['-'.join(i[1:1+2]) for i in lines]
 
 cmds = [
        ## "unset xtics",
@@ -115,7 +148,7 @@ cmds = [
 top = 10
 
 if 1:
-    if 1:
+    if 0:
         # Visualize singular values...
         plot_singular(s, top = top, log = True, 
                       width = 5,
@@ -126,31 +159,37 @@ if 1:
                       fl_path = f'eps_svd.rot',
                       index_from_zero = False)
 
-    if 1:
+    if 0:
         offset = "0.5,0.0"
         for j in range(1, top):
             for i in range(j + 1,top):
                 rank1, rank2 = j, i
-                plot_coeff(c, rank1, rank2, entries = entries, 
-                                            color_items = color_items, 
-                                            color_saturation = 60,
-                                            color_value = 100,
-                                            color_order = reaction_order,
-                                            label = True,
-                                            lbl_fontsize = 10,
-                                            ## xrange = (0.25, 0.75),
-                                            ## yrange = (0.5, 0.9),
-                                            offset = offset, 
-                                            rot = 0,
-                                            height = 6,
-                                            width = 6,
-                                            fontsize = 25,
-                                            pointsize = 2.0,
-                                            linewidth = 1.0,
-                                            fl_path = f'eps_svd.rot',
-                                            fl_postfix = f'',
-                                            index_from_zero = False,
-                                            cmds = cmds)
+                plot_coeff(c, rank1, rank2,
+                           plot_dict = gps_dict,
+                           label = True, 
+                           labeltext = entries,
+                           lbl_fontsize = 10,
+                           ## xrange = (0.25, 0.75),
+                           ## yrange = (0.5, 0.9),
+                           offset = offset, 
+                           rot = 0,
+                           height = 6,
+                           width = 6,
+                           fontsize = 25,
+                           pointsize = 2.0,
+                           linewidth = 1.0,
+                           fl_path = f'eps_svd.rot',
+                           fl_postfix = f'',
+                           index_from_zero = False,
+                           cmds = cmds)
+
+    if 1:
+        for rank in range(1, top):
+            plot_blankcoeff(rank, width = 6, 
+                                  height = 6, 
+                                  fl_path = 'eps_svd.rot', 
+                                  fl_postfix = f"", 
+                                  index_from_zero = False)
 
     if 0:
         offset = "0.5,0.0"
