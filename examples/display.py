@@ -24,6 +24,7 @@ def plot_dmat(
     vrange        = [],
     showzero      = True,
     showcolorbox  = True,
+    NaN           = "NaN",
     cmds_top      = [],    # Customized command for upper panel
     cmds_bottom   = [],    # Customized command for bottom panel
     ):
@@ -49,7 +50,8 @@ def plot_dmat(
     with open(fl_temp,'w') as fh:
         for j in range(num_items):
             for k in range(j):
-                fh.write(f"{k} {j} {dmat[j, k]}\n")
+                val = NaN if np.isnan(dmat[j, k]) else dmat[j, k]
+                fh.write(f"{k} {j} {val}\n")
             fh.write("\n")
 
     # Begin Gnuplot
@@ -451,7 +453,7 @@ def plot_coeff(c, rank1, rank2, plot_dict = {},
         gp(f"set xlabel 'c_{{{rank1:02d}}} (\305)'")
         gp(f"set ylabel 'c_{{{rank2:02d}}} (\305)'")
         gp("set size 1.0,1.0")
-        gp("set size ratio -1")
+        ## gp("set size ratio -1")
 
         for cmd in cmds:
             gp(cmd)
