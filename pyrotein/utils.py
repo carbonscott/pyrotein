@@ -117,3 +117,20 @@ def fill_nan_with_mean(mat, axis = 0):
     mat[nan_i] = np.take(axis_mean, nan_i[rep_axis])
 
     return None
+
+
+
+
+def fill_nan_with_zero(mat):
+    ''' Fill np.nan with zero along `axis`.
+    '''
+    # Assert mat is 2d...
+    assert len(mat.shape) == 2, "fill_nan_with_mean ONLY supports 2D matrix."
+
+    # Find the indices that has values of np.nan...
+    nan_i = np.where(np.isnan(mat))
+
+    # Replace np.nan with mean...
+    mat[nan_i] = 0.0
+
+    return None
