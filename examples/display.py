@@ -440,8 +440,8 @@ def plot_coeff(c, rank1, rank2, plot_dict = {},
         if xrange != range_default  or \
            yrange != range_default: fl_out = f"{fl_out}.zoom"
 
-        # Label???
-        if not label: fl_out = f"{fl_out}.nolabel"
+        ## # Label???
+        ## if not label: fl_out = f"{fl_out}.nolabel"
 
         # Decide the final filename
         gp(f"set output '{fl_out}.eps'")
@@ -450,8 +450,8 @@ def plot_coeff(c, rank1, rank2, plot_dict = {},
         gp(f"set xrange [{xrange[0]}:{xrange[1]}]")
         gp(f"set yrange [{yrange[0]}:{yrange[1]}]")
 
-        gp(f"set xlabel 'c_{{{rank1:02d}}} (\305)'")
-        gp(f"set ylabel 'c_{{{rank2:02d}}} (\305)'")
+        gp(f"set xlabel 'c_{{{rank1:d}}} (\305)'")
+        gp(f"set ylabel 'c_{{{rank2:d}}} (\305)'")
         gp("set size 1.0,1.0")
         ## gp("set size ratio -1")
 
