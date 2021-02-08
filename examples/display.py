@@ -90,6 +90,7 @@ def plot_dmat(
     gp(f"set xrange [-1:{num_items}]")
     gp(f"set yrange [{intst_column_mean_min}:{intst_column_mean_max}]")
     gp("set key top right")
+    gp(f"set border linewidth {linewidth}")
 
     if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth 1.0 linecolor rgb 'black'")
 
@@ -122,6 +123,7 @@ def plot_dmat(
     gp("set rmargin at screen 0.85")
     gp(f"set xrange [-1          :{num_items}   ]")
     gp(f"set yrange [{num_items}   :-1          ]")
+    gp(f"set border 4095 front linewidth {2 * linewidth}")
 
     for k, (x, y) in lbl.items():
         gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {lbl_fontsize}' front")
@@ -131,6 +133,7 @@ def plot_dmat(
     else:
         gp(palette)
     gp(f"set cbrange [{intst_min}:{intst_max}]")
+    gp(f"set cbtics font ',{lbl_fontsize}'")
     if not showcolorbox: gp(f"unset colorbox")
 
     for cmd in cmds_bottom:
@@ -139,107 +142,12 @@ def plot_dmat(
     gp("set view map")
     gp(f"splot '{fl_temp}' using 1:2:3 with pm3d")
 
+    gp("unset multiplot")
     gp("exit")
 
     return None
 
 
-def plot_simple_dmat(
-    dmat,                  # Input data, which is a distance matrix
-    fl_dmat,               # Filename of the exported file
-    lbl,                   # Labels used to mark on the diagonal
-    lbl_fontsize = 8,     # Fontsize for label
-    width         = 6,     # inch
-    height        = 7,     # inch
-    fontsize      = 14,    # pt
-    linewidth     = 1.0,   # pt
-    palette       = "",    # Palette definition
-    intst_min     = "0",   # Min intensity value
-    intst_max     = "*",   # Max intensity value
-    smooth        = False, # Choices of styles: smooth vs pixelated
-    vrange        = [],
-    showzero      = True,
-    cmds_top      = [],    # Customized command for upper panel
-    cmds_bottom   = [],    # Customized command for bottom panel
-    ):
-    assert len(vrange) == 0 or len(vrange) == 2, "vrange has to be an empty or 2-member tuple.  "
-
-    # Partial???
-    range_default = ("*", "*")
-    if len(vrange) == 2: fl_dmat = f"{fl_dmat}.zoom"
-
-    # [[[ Visualize ]]]
-    num_items = len(dmat)
-    smooth = False
-    if intst_max == "*":
-        intst_min = np.nanmin(dmat)
-        intst_max = np.nanmax(dmat)
-
-    gp = GnuplotPy3.GnuplotPy3()
-    gp(f"set terminal postscript eps  size {width}, {height} \\")
-    gp(f"                             enhanced color \\")
-    gp(f"                             font 'Helvetica,{fontsize}' \\")
-    gp(f"                             linewidth {linewidth}")
-
-    # Declare the filename to export...
-    gp(f"set output '{fl_dmat}.eps'")
-    gp("unset key")
-
-    # PLOT 2: distance matrix...
-    gp(f"unset arrow")
-    gp(f"unset key")
-    gp(f"unset xrange")
-    gp(f"unset yrange")
-    gp(f"unset xtics")
-    gp(f"unset ytics")
-    gp(f"unset logscale")
-    ## gp("set origin 0,0.0")
-    ## gp("set size   1.0,0.70")
-    ## gp("set size ratio -1")
-    ## gp("set tmargin 0")
-    ## gp("set bmargin at screen 0.05")
-    ## gp("set lmargin at screen 0.10")
-    ## gp("set rmargin at screen 0.85")
-    gp(f"set xrange [-1          :{num_items}   ]")
-    gp(f"set yrange [{num_items}   :-1          ]")
-    ## gp("set lmargin at screen 0.10")
-    ## gp("set rmargin at screen 0.85")
-    gp("unset colorbox")
-
-    for k, (x, y) in lbl.items():
-        gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {lbl_fontsize}' front")
-
-    if palette == "":
-        gp("set palette defined ( -0.001 'white', 0 'blue', 0.5 'light-grey', 1 'red' )")
-    else:
-        gp(palette)
-    gp(f"set cbrange [{intst_min}:{intst_max}]")
-
-    for cmd in cmds_bottom:
-        gp(cmd)
-
-    if smooth:
-        gp("set pm3d map")
-        gp("set pm3d interpolate 0,0")
-        gp("set lmargin at screen 0.01")
-        gp("set rmargin at screen 0.99")
-        gp("set bmargin at screen 0.05")
-        gp("set tmargin at screen 0.95")
-        gp("splot '-' using 1:2:3")
-    else: 
-        gp("plot '-' using 1:2:3 with image")
-
-    for j in range(num_items):
-        for k in range(num_items):
-            if len(vrange) == 2: 
-                if vrange[1] < j or j < vrange[0]: continue
-            if j > k: gp(f"{k} {j} {dmat[j, k]}")
-            else: gp(f"{k} {j} NaN")
-        gp(" ")
-    gp("e")
-    gp("exit")
-
-    return None
 
 
 def plot_singular(s, top = 3, fl_export = "singular", 
