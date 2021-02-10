@@ -91,15 +91,16 @@ def plot_dmat(
     gp(f"set yrange [{intst_column_mean_min}:{intst_column_mean_max}]")
     gp("set key top right")
     gp(f"set border linewidth {linewidth}")
+    gp("set view map")
 
     if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth 1.0 linecolor rgb 'black'")
 
     for cmd in cmds_top:
         gp(cmd)
 
-    gp(f"plot '-' using 1:2 with lines linewidth 1.0 linecolor rgb 'black' title 'Column mean'")
+    gp(f"splot '-' using 1:2:3 with lines linewidth 1.0 linecolor rgb 'black' title 'Column mean'")
     for i,v in enumerate(column_mean_dmat):
-        gp(f"{i} {v}")
+        gp(f"{i} {v} 0")
     gp("e")
 
 
@@ -123,7 +124,7 @@ def plot_dmat(
     gp("set rmargin at screen 0.85")
     gp(f"set xrange [-1          :{num_items}   ]")
     gp(f"set yrange [{num_items}   :-1          ]")
-    gp(f"set border 4095 front linewidth {2 * linewidth}")
+    gp(f"set border linewidth {linewidth}")
 
     for k, (x, y) in lbl.items():
         gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {lbl_fontsize}' front")
