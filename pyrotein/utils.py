@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from operator import itemgetter
+from itertools import groupby
 
 
 def bin_image(img_orig, binning = 4, mode = 1, nan_replace = 0):
@@ -134,3 +136,19 @@ def fill_nan_with_zero(mat):
     mat[nan_i] = 0.0
 
     return None
+
+
+
+
+def group_consecutive_integer(data):
+    ''' As indicated by the function name.  Refer to 
+
+        https://docs.python.org/2.6/library/itertools.html#examples
+
+        for the method.  
+    '''
+    data_export = []
+    for k, g in groupby(enumerate(data), lambda x: x[0]-x[1]):
+        data_export.append( list(map(itemgetter(1), g)) )
+
+    return data_export
