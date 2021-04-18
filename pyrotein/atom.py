@@ -169,6 +169,83 @@ def extract_xyz(atoms_to_extract, atom_dict, chain, nterm, cterm):
 
 
 
+def is_standard(atom1_head, atom1_tail, atom2_head, atom2_tail):
+    ''' Check if two pose vectors vector1 and vector2 form an acute angle (< 90 degree).  
+        If not, swap head and tail in vector1.  
+
+        4 args should be numpy arrays.  
+    '''
+    # Set the default result to be True...
+    res = True
+
+    # Construct vectors...
+    vec1 = atom1_head - atom1_tail
+    vec2 = atom2_head - atom2_tail
+
+    # False if not standard...
+    if np.dot(vec1, vec2) < 0: res = False
+
+    return res
+
+
+
+
+def standardize_sidechain(atom_dict):
+    ''' Standardize side chain atoms for a given atomic structure in atom_dict.
+        It facilitates distance matrix analysis of sidechains.  The order of atoms 
+        should follow a standard.  The type of atoms don't make a difference in 
+        distance matrix analysis.  
+    '''
+    # Consider resiudes with ambiguous atomic position...
+    # e.g. NH1 and NH2 in ARG can be swapped
+    ambi_dict = {
+        "ARG" : [ "CD", "NE", "NH1", "NH2" ],
+        "ASP" : [ "CA", "CB", "OD1", "OD2" ],
+        "ASN" : [ "CA", "CB", "OD1", "ND2" ],
+        "GLU" : [ "CB", "CG", "OE1", "OE2" ],
+        "GLN" : [ "CB", "CG", "OE1", "NE2" ],
+        "HIS" : [ "CA", "CB", "ND1", "CD2" ],
+    }
+
+    # Specify the swapping rule to standardize sidechains...
+    swap_dict = {
+        "ARG" : [["NH1", "NH2"]],
+        "ASP" : [["OD1", "OD2"]],
+        "ASN" : [["OD1", "ND2"]],
+        "GLU" : [["OE1", "OE2"]],
+        "GLN" : [["OE1", "NE2"]],
+        "HIS" : [["ND1", "CD2"], ["CE1", "NE2"]],
+    }
+
+    # Fix the ordering throughout atom_dict...
+    for chain, chain_dict in atom_dict.items():
+        for resi, resi_dict in chain_dict.items():
+            # Skip entries not containing CA backbone...
+            if not "CA" in resi_dict: continue
+
+            # Fetch the name of residue...
+            # 4 => resname, check `pr.atom.spec()`
+            resn = resi_dict["CA"][4]
+
+            # Skip entries not considered as polar atoms...
+            if not resn in ambi_dict: continue
+
+            # Get pose vectors...
+            # 8:8+3 => x, y, z
+            atom1_head, atom1_tail, atom2_head, atom2_tail = \
+            [ np.array(resi_dict[i][8:8+3]) for i in ambi_dict[resn] ]
+
+            # Swap xyz when pose is not standard...
+            if not is_standard(atom1_head, atom1_tail, atom2_head, atom2_tail):
+                for atom1_swap, atom2_swap in swap_dict[resn]:
+                    resi_dict[atom1_swap][8:8+3], resi_dict[atom2_swap][8:8+3] = \
+                    resi_dict[atom2_swap][8:8+3], resi_dict[atom1_swap][8:8+3]
+
+    return None
+
+
+
+
 # [[[ List based methods ]]]
 
 def import_connect(fl_pdb):
