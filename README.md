@@ -194,7 +194,8 @@ Sidechain atoms can be interchangeable, such as `NH1` and `NH2` in `ARG`, `OD1`
 and `ND2` in `ASN`.  The figure below illustrates the possible ambiguous
 scenarios and specifies the swapping rules leading to a standard ordering.  
 
-![](./figures/sidechain.standardize.png)
+![](./figures/sidechain.standardize1.png)
+![](./figures/sidechain.standardize2.png)
 
 
 ### Examples
