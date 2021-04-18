@@ -12,12 +12,7 @@ This package provides structure analysis capability based on distance matrix.
 ## Install with `pip`
 
 ```
-pip install pyrotein --user
-```
-
-## Upgrade to the latest version
-
-```
+pip uninstall pyrotein
 pip install git+https://github.com/carbonscott/pyrotein --upgrade --user
 ```
 
@@ -193,6 +188,15 @@ for i_fl, (pdb, chain) in enumerate(lines):
 rmsd_dmat = pr.distance.calc_rmsd_mats(dmats)
 ```
 
+### Standardize sidechain atoms
+
+Sidechain atoms can be interchangeable, such as `NH1` and `NH2` in `ARG`, `OD1`
+and `ND2` in `ASN`.  The figure below illustrates the possible ambiguous
+scenarios and specifies the swapping rules leading to a standard ordering.  
+
+![](./figures/sidechain.standardize.png)
+
+
 ### Examples
 
 The `examples` directory contains two examples about distance matrix and RMSD
@@ -201,7 +205,7 @@ distance matrix.  Two visualization choices are provided via `Gnuplot` and
 
 Here is an sample figure of a RMSD distance matrix in the `examples` directory.
 
-![](./examples/rmsd.png)
+![](./figures/rmsd.png)
 
 ## Caveats
 
