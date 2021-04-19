@@ -205,6 +205,11 @@ def standardize_sidechain(atom_dict):
         "GLU" : [ "CB", "CG", "OE1", "OE2" ],
         "GLN" : [ "CB", "CG", "OE1", "NE2" ],
         "HIS" : [ "CA", "CB", "ND1", "CD2" ],
+        "THR" : [ "C" , "CA", "OG1", "CG2" ],
+        "VAL" : [ "C" , "CA", "CG1", "CG2" ],
+        "LEU" : [ "CA", "CB", "CD1", "CD2" ],
+        "PHE" : [ "CA", "CB", "CD1", "CD2" ],
+        "TYR" : [ "CA", "CB", "CD1", "CD2" ],
     }
 
     # Specify the swapping rule to standardize sidechains...
@@ -215,6 +220,11 @@ def standardize_sidechain(atom_dict):
         "GLU" : [["OE1", "OE2"]],
         "GLN" : [["OE1", "NE2"]],
         "HIS" : [["ND1", "CD2"], ["CE1", "NE2"]],
+        "THR" : [["OG1", "CG2"]],
+        "VAL" : [["CG1", "CG2"]],
+        "LEU" : [["CD1", "CD2"]],
+        "PHE" : [["CD1", "CD2"], ["CE1", "CE2"]],
+        "TYR" : [["CD1", "CD2"], ["CE1", "CE2"]],
     }
 
     # Fix the ordering throughout atom_dict...
