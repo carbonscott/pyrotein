@@ -223,6 +223,10 @@ nterm, cterm = 1, 322
 xyzs = pr.atom.extract_xyz([], atom_dict, chain, nterm, cterm)
 ```
 
+Distance matrix that depict both main chain and side chain.
+
+![](./figures/1f88.A.dmat.png)
+
 
 ### Examples
 
