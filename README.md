@@ -188,6 +188,7 @@ for i_fl, (pdb, chain) in enumerate(lines):
 rmsd_dmat = pr.distance.calc_rmsd_mats(dmats)
 ```
 
+
 ### Standardize sidechain atoms
 
 Sidechain atoms can be interchangeable, such as `NH1` and `NH2` in `ARG`, `OD1`
@@ -196,6 +197,31 @@ scenarios and specifies the swapping rules leading to a standard ordering.
 
 ![](./figures/sidechain.standardize1.png)
 ![](./figures/sidechain.standardize2.png)
+
+Sample code to consider sidechain atom standardization and extract both main
+chain and side chain atoms.  
+
+```Python
+import pyrotein as pr
+import numpy as np
+import os
+
+# Read atomic information...
+pdb       = "1f88"
+chain     = "A"
+drc_pdb   = "pdb"
+fl_pdb    = f"{pdb}.pdb"
+path_pdb  = os.path.join(drc_pdb, fl_pdb)
+atom_list = pr.atom.read(path_pdb)
+atom_dict = pr.atom.create_lookup_table(atom_list)
+
+# Standardize sidechain atoms...
+pr.atom.standardize_sidechain(atom_dict)
+
+# User has to be sure that there is no non-protein residue in the range of nterm..cterm
+nterm, cterm = 1, 322
+xyzs = pr.atom.extract_xyz([], atom_dict, chain, nterm, cterm)
+```
 
 
 ### Examples
