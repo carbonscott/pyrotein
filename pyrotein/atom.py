@@ -95,6 +95,39 @@ def spec():
 
 
 
+def read_constant_atomlabel():
+    # MAR stands for missing-a-residue;
+    # We consider MAR still has 4 placeholder atoms that form a backbone
+    label_dict = {
+        "ARG" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD', 'NE', 'CZ', 'NH1', 'NH2'],
+        "HIS" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'ND1', 'CD2', 'CE1', 'NE2'],
+        "LYS" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD', 'CE', 'NZ'],
+        "ASP" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'OD1', 'OD2'],
+        "GLU" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD', 'OE1', 'OE2'],
+        "SER" : ['N', 'CA', 'C', 'O', 'CB', 'OG'],
+        "THR" : ['N', 'CA', 'C', 'O', 'CB', 'OG1', 'CG2'],
+        "ASN" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'OD1', 'ND2'],
+        "GLN" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD', 'OE1', 'NE2'],
+        "CYS" : ['N', 'CA', 'C', 'O', 'CB', 'SG'],
+        "GLY" : ['N', 'CA', 'C', 'O'],
+        "PRO" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD'],
+        "ALA" : ['N', 'CA', 'C', 'O', 'CB'],
+        "VAL" : ['N', 'CA', 'C', 'O', 'CB', 'CG1', 'CG2'],
+        "ILE" : ['N', 'CA', 'C', 'O', 'CB', 'CG1', 'CG2', 'CD1'],
+        "LEU" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD1', 'CD2'],
+        "MET" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'SD', 'CE'],
+        "PHE" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ'],
+        "TYR" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH'],
+        "TRP" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2'],
+
+        "MAR" : ['N', 'CA', 'C', 'O'],
+    }
+
+    return label_dict
+
+
+
+
 def create_lookup_table(atoms_pdb):
     ''' Create a lookup table to access atomic coordinates.  
 
@@ -127,23 +160,64 @@ def create_lookup_table(atoms_pdb):
 
 # [[[ Dictionary based methods ]]]
 
-def extract_segment(atom_dict, chain, nterm, cterm):
-    ''' Extract a subset of an amino acid chain in a range specified by two
+def filter_by_resi(atom_dict, chain, nterm, cterm):
+    ''' Filter out a subset of an amino acid chain in a range specified by two
         numbers.  
-
-        Returns atmoic coordinates in a lookup table format.  
     '''
     return { k : v for k, v in atom_dict[chain].items() if nterm <= k <= cterm }
 
 
 
 
-def extract_xyz(atoms_to_extract, atom_dict, chain, nterm, cterm):
+def filter_by_resn(atom_dict, chain, resn):
+    ''' Filter out a subset of an amino acid chain by the residue name
+        specified in `resn`.  
+    '''
+    return { k : v for k, v in atom_dict[chain].items() if "CA" in v and v["CA"][4] == resn }
+
+
+
+
+def form_resi_dict(atom_dict, chain):
+    ''' Form a dictionary with resi:resn kv pairs.
+    '''
+    return { k : v["CA"][4] for k, v in atom_dict[chain].items() if "CA" in v }
+
+
+
+
+def form_resi_dict_by_range(atom_dict, chain, nterm, cterm):
+    ''' Form a resi dictionary based on resi range.
+    '''
+    # Form an empty resi_dict...
+    resi_dict = { i : "MAR" for i in range(nterm, cterm + 1) }
+
+    # Get the chain...
+    chain_dict = atom_dict[chain]
+
+    # For each resi
+    for i in range(nterm, cterm + 1):
+        # Skip missing residues...
+        if not i in chain_dict: continue
+
+        # Skip residues without CA...
+        if not "CA" in chain_dict[i]: continue
+
+        resi_dict[i] = chain_dict[i]["CA"][4]
+
+    return resi_dict
+
+
+
+
+def extract_xyz_from_selection(atoms_to_extract, atom_dict, chain, nterm, cterm):
     ''' Extract atomic coordinates of interest (specified in the first
         argument) in the lookup table format.  
+
+        if atoms_to_extract is empty `[]`, then it is derived from the resn.  
     '''
-    # Extract the segment of amino acids...
-    pro_dict = extract_segment(atom_dict, chain, nterm, cterm)
+    # Just a shortcut var name
+    chain_dict = atom_dict[chain]
 
     # Define atoms used for distance matrix analysis...
     len_backbone = (cterm - nterm + 1) * len(atoms_to_extract)
@@ -160,11 +234,67 @@ def extract_xyz(atoms_to_extract, atom_dict, chain, nterm, cterm):
             mat_i = (i - nterm) * len(atoms_to_extract) + j
 
             # Assign coordinates to matrix at index mat_i...
-            if i in pro_dict:
-                if p in pro_dict[i]:
-                    xyzs[mat_i] = get_coord(pro_dict[i][p])
+            if i in chain_dict:
+                if p in chain_dict[i]:
+                    # 8:8+3 => x,y,z
+                    xyzs[mat_i] = chain_dict[i][p][8:8+3]
 
     return xyzs
+
+
+
+
+def extract_xyz_from_resn(atom_dict, chain, nterm, cterm):
+    ''' Extract atomic coordinates from all atoms in a residue.  
+    '''
+    # Import label_dict...
+    label_dict = read_constant_atomlabel()
+
+    # Form resi:resn pairs...
+    resi_dict = form_resi_dict_by_range(atom_dict, chain, nterm, cterm)
+
+    # Just a shortcut var name
+    chain_dict = atom_dict[chain]
+
+    # Count atoms used for distance matrix analysis...
+    len_backbone = np.sum( [ len(label_dict[v]) for k, v in resi_dict.items() ] )
+
+    # Preallocate memory for storing coordinates...
+    xyzs    = np.zeros((len_backbone, 3))    # Initialize coordinate matrix
+    xyzs[:] = np.nan                         # np.nan for any missing residue
+
+    # From each residue
+    mat_i = 0
+    for i in range(nterm, cterm + 1):
+        # Select a residue...
+        resn = resi_dict[i]
+
+        # Skip missing residues...
+        if resn == "MAR": 
+            mat_i += len(["N", "CA", "C", "O"])
+            continue
+
+        # Find the atoms to extract in response to a resn...
+        atoms_to_extract = label_dict[resn]
+        for j, atm in enumerate(atoms_to_extract):
+            # 8:8+3 => x,y,z
+            xyzs[mat_i] = chain_dict[i][atm][8:8+3]
+            mat_i += 1
+
+    return xyzs
+
+
+
+def extract_xyz(atoms_to_extract, atom_dict, chain, nterm, cterm):
+    ''' A higher level wrapper to include two scenarios of coordinates extraction.
+    '''
+    if len(atoms_to_extract) > 0: 
+        xyzs = extract_xyz_from_selection(atoms_to_extract, atom_dict, chain, nterm, cterm)
+    else:
+        xyzs = extract_xyz_from_resn(atom_dict, chain, nterm, cterm)
+
+    return xyzs
+
 
 
 
@@ -237,8 +367,11 @@ def standardize_sidechain(atom_dict):
             # 4 => resname, check `pr.atom.spec()`
             resn = resi_dict["CA"][4]
 
-            # Skip entries not considered as polar atoms...
+            # Skip entries not having ambiguous atom placement...
             if not resn in ambi_dict: continue
+
+            # Skip entries that have missing atoms...
+            if not np.all([ i in resi_dict for i in ambi_dict['THR'] ]): continue
 
             # Get pose vectors...
             # 8:8+3 => x, y, z
