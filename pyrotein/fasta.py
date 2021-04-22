@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from .utils import get_key_by_max_value
+
 
 def read(fl_fasta):
     ''' Extract sequence from a fasta file.  
@@ -53,3 +55,31 @@ def seq_to_resi(seq_mask, resi_tar):
         else:
             seq_to_resi_dict[k] = None
     return seq_to_resi_dict
+
+
+
+
+def tally_resn_in_seqs(seq_dict):
+    ''' Tally the occurence of each residue from a sequence alignment fasta file.
+        The input is a seqeuence dictionary.  
+    '''
+    tally_dict = {}
+
+    for k, v in seq_dict.items():
+        for i, resi in enumerate(v):
+            # Initialize at resi position at i...
+            if not i in tally_dict: tally_dict[i] = {}
+
+            # Count 1 when resi was found the first time...
+            if not resi in tally_dict[i]: tally_dict[i][resi] = 1
+            else: tally_dict[i][resi] += 1
+
+    return tally_dict
+
+
+
+
+def infer_super_seq(tally_dict):
+    ''' Infer the most representative residue based on a tallied result (dict).  
+    '''
+    return ''.join( [ get_key_by_max_value(v) for v in tally_dict.values() ] )

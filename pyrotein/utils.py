@@ -152,3 +152,11 @@ def group_consecutive_integer(data):
         data_export.append( list(map(itemgetter(1), g)) )
 
     return data_export
+
+
+
+
+def get_key_by_max_value(obj_dict):
+    ''' A utility to fetch key corresponding to the max value in a dict.  
+    '''
+    return max(obj_dict.items(), key = lambda x: x[1])[0]
