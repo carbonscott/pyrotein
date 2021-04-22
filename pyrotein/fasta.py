@@ -32,7 +32,7 @@ def mask_pairseq(seq1, seq2, null = '-'):
 
 
 
-def mask_seq(seq, null = '-'):
+def create_seqmask(seq, null = '-'):
     ''' Map False to '-' and True to non '-' in seq index.
     '''
     mask = {}
@@ -43,14 +43,18 @@ def mask_seq(seq, null = '-'):
 
 
 
-def seq_to_resi(seq_mask, resi_tar):
-    ''' Map seq index to resi index.  
+def seq_to_resi(seq, resi_non_null, null = '-'):
+    ''' Map seq index to resi.  
+        seq is a sequence.  
+        resi_non_null is the resi to the first non '-' residue.  
     '''
-    id_aux = 0
+    seqmask = create_seqmask(seq, null = null)
+
+    id_aux = resi_non_null
     seq_to_resi_dict = {}
-    for k, v in seq_mask.items():
+    for k, v in seqmask.items():
         if v :
-            seq_to_resi_dict[k] = resi_tar[id_aux]
+            seq_to_resi_dict[k] = id_aux
             id_aux += 1
         else:
             seq_to_resi_dict[k] = None
@@ -83,3 +87,38 @@ def infer_super_seq(tally_dict):
     ''' Infer the most representative residue based on a tallied result (dict).  
     '''
     return ''.join( [ get_key_by_max_value(v) for v in tally_dict.values() ] )
+
+
+
+
+def read_constant_aminoacid_code():
+    aa_dict = {
+        "R" : "ARG", "H" : "HIS", "K" : "LYS", "D" : "ASP", "E" : "GLU",
+        "S" : "SER", "T" : "THR", "N" : "ASN", "Q" : "GLN", "C" : "CYS",
+        "G" : "GLY", "P" : "PRO", "A" : "ALA", "V" : "VAL", "I" : "ILE",
+        "L" : "LEU", "M" : "MET", "F" : "PHE", "Y" : "TYR", "W" : "TRP",
+
+        "-" : "MAR"
+    }
+
+    return aa_dict
+
+
+
+
+def find_mismatch(ref, tar):
+    ''' Return a list of index points to mismatched residue.  Both residues 
+        should be available.  That is to say,
+
+        ref and tar must have the same length.
+    '''
+    len_seq = len(ref)
+
+    mismatch_list = []
+    for i in range(len_seq):
+        if ref[i] + tar[i] == "--": continue
+        if '-' in ref[i] + tar[i]: continue
+
+        if ref[i] != tar[i]: mismatch_list.append(i)
+
+    return mismatch_list
