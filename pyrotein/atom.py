@@ -178,7 +178,7 @@ def filter_by_resn(atom_dict, chain, resn):
 
 
 
-def form_resi_dict(atom_dict, chain):
+def resi_to_resn(atom_dict, chain):
     ''' Form a dictionary with resi:resn kv pairs.
     '''
     return { k : v["CA"][4] for k, v in atom_dict[chain].items() if "CA" in v }
@@ -186,7 +186,7 @@ def form_resi_dict(atom_dict, chain):
 
 
 
-def form_resi_dict_by_range(atom_dict, chain, nterm, cterm):
+def resi_to_resn_by_range(atom_dict, chain, nterm, cterm):
     ''' Form a resi dictionary based on resi range.
     '''
     # Form an empty resi_dict...
@@ -251,13 +251,13 @@ def extract_xyz_from_resn(atom_dict, chain, nterm, cterm):
     label_dict = read_constant_atomlabel()
 
     # Form resi:resn pairs...
-    resi_dict = form_resi_dict_by_range(atom_dict, chain, nterm, cterm)
+    resi_to_resn_dict = resi_to_resn_by_range(atom_dict, chain, nterm, cterm)
 
     # Just a shortcut var name
     chain_dict = atom_dict[chain]
 
     # Count atoms used for distance matrix analysis...
-    len_backbone = np.sum( [ len(label_dict[v]) for k, v in resi_dict.items() ] )
+    len_backbone = np.sum( [ len(label_dict[v]) for k, v in resi_to_resn_dict.items() ] )
 
     # Preallocate memory for storing coordinates...
     xyzs    = np.zeros((len_backbone, 3))    # Initialize coordinate matrix
@@ -267,7 +267,7 @@ def extract_xyz_from_resn(atom_dict, chain, nterm, cterm):
     mat_i = 0
     for i in range(nterm, cterm + 1):
         # Select a residue...
-        resn = resi_dict[i]
+        resn = resi_to_resn_dict[i]
 
         # Skip missing residues...
         if resn == "MAR": 
@@ -275,13 +275,29 @@ def extract_xyz_from_resn(atom_dict, chain, nterm, cterm):
             continue
 
         # Find the atoms to extract in response to a resn...
+        resi_dict = chain_dict[i]
         atoms_to_extract = label_dict[resn]
         for j, atm in enumerate(atoms_to_extract):
             # 8:8+3 => x,y,z
-            xyzs[mat_i] = chain_dict[i][atm][8:8+3]
+            if atm in resi_dict:
+                xyzs[mat_i] = resi_dict[atm][8:8+3]
             mat_i += 1
 
     return xyzs
+
+
+
+
+def convert_to_GLY(atom_dict, chain, resi):
+    ''' It's a utility function to literally convert the resn to GLY.  
+        A use case is to facilitate the full-distance-matrix analysis.  
+        Policy: Non major resn is equivalent to GLY.  
+    '''
+    resi_dict = atom_dict[chain][resi]
+    for k, v in resi_dict.items(): v[4] = "GLY"
+
+    return None
+
 
 
 
