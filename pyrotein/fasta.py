@@ -32,7 +32,7 @@ def mask_pairseq(seq1, seq2, null = '-'):
 
 
 
-def create_seqmask(seq, null = '-'):
+def mask_seq(seq, null = '-'):
     ''' Map False to '-' and True to non '-' in seq index.
     '''
     mask = {}
@@ -43,12 +43,20 @@ def create_seqmask(seq, null = '-'):
 
 
 
+def seqi_non_null(seq, null = '-'):
+    ''' Return a list of sequence index when resn is not '-'.
+    '''
+    return [ k for k, v in mask_seq(seq, null = null).items() if v ]
+
+
+
+
 def seq_to_resi(seq, resi_non_null, null = '-'):
     ''' Map seq index to resi.  
         seq is a sequence.  
         resi_non_null is the resi to the first non '-' residue.  
     '''
-    seqmask = create_seqmask(seq, null = null)
+    seqmask = mask_seq(seq, null = null)
 
     id_aux = resi_non_null
     seq_to_resi_dict = {}
@@ -106,19 +114,42 @@ def read_constant_aminoacid_code():
 
 
 
-def find_mismatch(ref, tar):
-    ''' Return a list of index points to mismatched residue.  Both residues 
-        should be available.  That is to say,
-
-        ref and tar must have the same length.
+def diff_seq(tar, ref):
+    ''' Return a differnce sequence, in which identical resn will be replaced
+        with '-', and different resn will be replaced with the resn in tar.  
     '''
-    len_seq = len(ref)
+    len_ref = len(ref)
+    len_tar = len(tar)
 
-    mismatch_list = []
-    for i in range(len_seq):
-        if ref[i] + tar[i] == "--": continue
-        if '-' in ref[i] + tar[i]: continue
+    assert len_ref == len_tar, f"Error in length: len(ref) = {len_ref}; len(tar) = {len_tar}"
 
-        if ref[i] != tar[i]: mismatch_list.append(i)
+    seqdiff = ''
+    for i in range(len_ref):
+        if ref[i] == tar[i]: seqdiff += '-'
+        else:                seqdiff += tar[i]
 
-    return mismatch_list
+    return seqdiff
+
+
+
+
+def strip_null(seq, null = '-'): 
+    ''' Removing leading and trailing '-' in a sequence.  
+    '''
+    return seq.strip(null)
+
+
+
+
+def get_lseqi(seq):
+    ''' Return the leftmost sequence index corresponds to first non-null ('-') resn.
+    '''
+    return seq.find( strip_null(seq)[0] )
+
+
+
+
+def get_rseqi(seq):
+    ''' Return the rightmost sequence index corresponds to first non-null ('-') resn.
+    '''
+    return seq.rfind( strip_null(seq)[-1] )
