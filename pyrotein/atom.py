@@ -303,13 +303,14 @@ def extract_xyz_from_resn(atom_dict, chain, nterm, cterm):
 
 
 
-def convert_to_GLY(atom_dict, chain, resi):
+def convert_to_GLY(atom_dict, chain, resi_list):
     ''' It's a utility function to literally convert the resn to GLY.  
         A use case is to facilitate the full-distance-matrix analysis.  
         Policy: Non major resn is equivalent to GLY.  
     '''
-    resi_dict = atom_dict[chain][resi]
-    for k, v in resi_dict.items(): v[4] = "GLY"
+    for resi in resi_list:
+        resi_dict = atom_dict[chain][resi]
+        for k, v in resi_dict.items(): v[4] = "GLY"
 
     return None
 
