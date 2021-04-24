@@ -237,8 +237,9 @@ distance matrix.  Two visualization choices are provided via `Gnuplot` and
 `matplotlib`.  
 
 Here is an sample figure of a RMSD distance matrix in the `examples` directory.
+This is a RMSD of a full matrix (main chain + side chain).  
 
-![](./figures/rmsd.png)
+![](./figures/rmsd.full.png)
 
 ## Caveats
 
