@@ -193,7 +193,7 @@ def filter_by_resn(atom_dict, chain, resn):
 
 
 
-def extract_xyz_from_by_atom(atoms_to_extract, atom_dict, chain, nterm, cterm):
+def extract_xyz_by_atom(atoms_to_extract, atom_dict, chain, nterm, cterm):
     ''' Extract atomic coordinates of interest (specified in the first
         argument) in the lookup table format.  
 
