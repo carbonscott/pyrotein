@@ -225,7 +225,7 @@ def resi_to_resn_by_range(atom_dict, chain, nterm, cterm):
 
 
 
-def extract_xyz_from_selection(atoms_to_extract, atom_dict, chain, nterm, cterm):
+def extract_xyz_from_by_atom(atoms_to_extract, atom_dict, chain, nterm, cterm):
     ''' Extract atomic coordinates of interest (specified in the first
         argument) in the lookup table format.  
 
@@ -259,35 +259,29 @@ def extract_xyz_from_selection(atoms_to_extract, atom_dict, chain, nterm, cterm)
 
 
 
-def extract_xyz_from_resn(atom_dict, chain, nterm, cterm):
+def extract_xyz_by_seq(seq, atom_dict, chain, nterm, cterm):
     ''' Extract atomic coordinates from all atoms in a residue.  
     '''
-    # Import label_dict...
+    # Import label_dict and aa_dict...
     label_dict = constant_atomlabel()
-
-    # Form resi:resn pairs...
-    resi_to_resn_dict = resi_to_resn_by_range(atom_dict, chain, nterm, cterm)
+    aa_dict    = constant_aminoacid_code()
 
     # Just a shortcut var name
     chain_dict = atom_dict[chain]
 
     # Count atoms used for distance matrix analysis...
-    len_backbone = np.sum( [ len(label_dict[v]) for k, v in resi_to_resn_dict.items() ] )
+    len_xyzs = np.sum( [ len(label_dict[aa_dict[i]]) for i in seq ] )
 
     # Preallocate memory for storing coordinates...
-    xyzs    = np.zeros((len_backbone, 3))    # Initialize coordinate matrix
+    xyzs    = np.zeros((len_xyzs, 3))    # Initialize coordinate matrix
     xyzs[:] = np.nan                         # np.nan for any missing residue
 
     # From each residue
     mat_i = 0
-    for i in range(nterm, cterm + 1):
+    for k, i in enumerate(range(nterm, cterm + 1)):
         # Select a residue...
-        resn = resi_to_resn_dict[i]
-
-        # Skip missing residues...
-        if resn == "MAR": 
-            mat_i += len(["N", "CA", "C", "O"])
-            continue
+        # seqi always starts from 0
+        resn = aa_dict[seq[k]]
 
         # Find the atoms to extract in response to a resn...
         resi_dict = chain_dict[i]
@@ -313,20 +307,6 @@ def convert_to_GLY(atom_dict, chain, resi_list):
         for k, v in resi_dict.items(): v[4] = "GLY"
 
     return None
-
-
-
-
-def extract_xyz(atoms_to_extract, atom_dict, chain, nterm, cterm):
-    ''' A higher level wrapper to include two scenarios of coordinates extraction.
-    '''
-    if len(atoms_to_extract) > 0: 
-        xyzs = extract_xyz_from_selection(atoms_to_extract, atom_dict, chain, nterm, cterm)
-    else:
-        xyzs = extract_xyz_from_resn(atom_dict, chain, nterm, cterm)
-
-    return xyzs
-
 
 
 

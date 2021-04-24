@@ -51,6 +51,27 @@ def seqi_non_null(seq, null = '-'):
 
 
 
+def seqi_null(seq, null = '-'):
+    ''' Return a list of sequence index when resn is not '-'.
+    '''
+    return [ k for k, v in mask_seq(seq, null = null).items() if not v ]
+
+
+
+
+def patch_seq_with_template(seq, seq_template, null = '-'):
+    ''' Complete missing resn by the corresponding one in template.
+    '''
+    seq_list = [ i for i in seq ]
+
+    seqi_null_seq = seqi_null(seq, null = null)
+    for i in seqi_null_seq: seq_list[i] = seq_template[i]
+
+    return ''.join(seq_list)
+
+
+
+
 def seq_to_resi(seq, resi_non_null, null = '-'):
     ''' Map seq index to resi.  
         seq is a sequence.  
