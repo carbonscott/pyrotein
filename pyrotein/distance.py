@@ -48,6 +48,18 @@ def calc_rmsd_mats(mats):
 
 
 
+def calc_rmsd_array(ary):
+    ary_mean = np.nanmean( ary, axis = 0 )
+
+    ary_diff = ary - ary_mean[np.newaxis, :]
+
+    ary_rmsd = np.sqrt( np.nanmean( ary_diff * ary_diff, axis = 0 ) )
+
+    return ary_rmsd
+
+
+
+
 def list_to_dmat(xyzs):
     """ Convert each list into a distance matrix.
 
