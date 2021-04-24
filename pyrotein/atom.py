@@ -365,8 +365,8 @@ def standardize_sidechain(atom_dict):
         "ASN" : [ "CA", "CB", "OD1", "ND2" ],
         "GLU" : [ "CB", "CG", "OE1", "OE2" ],
         "GLN" : [ "CB", "CG", "OE1", "NE2" ],
-        "HIS" : [ "CA", "CB", "ND1", "CD2" ],
-        "THR" : [ "C" , "CA", "OG1", "CG2" ],
+        ## "HIS" : [ "CA", "CB", "ND1", "CD2" ],
+        ## "THR" : [ "C" , "CA", "OG1", "CG2" ],
         "VAL" : [ "C" , "CA", "CG1", "CG2" ],
         "LEU" : [ "CA", "CB", "CD1", "CD2" ],
         "PHE" : [ "CA", "CB", "CD1", "CD2" ],
@@ -380,8 +380,8 @@ def standardize_sidechain(atom_dict):
         "ASN" : [["OD1", "ND2"]],
         "GLU" : [["OE1", "OE2"]],
         "GLN" : [["OE1", "NE2"]],
-        "HIS" : [["ND1", "CD2"], ["CE1", "NE2"]],
-        "THR" : [["OG1", "CG2"]],
+        ## "HIS" : [["ND1", "CD2"], ["CE1", "NE2"]],
+        ## "THR" : [["OG1", "CG2"]],
         "VAL" : [["CG1", "CG2"]],
         "LEU" : [["CD1", "CD2"]],
         "PHE" : [["CD1", "CD2"], ["CE1", "CE2"]],
@@ -402,7 +402,7 @@ def standardize_sidechain(atom_dict):
             if not resn in ambi_dict: continue
 
             # Skip entries that have missing atoms...
-            if not np.all([ i in resi_dict for i in ambi_dict['THR'] ]): continue
+            if not np.all([ i in resi_dict for i in ambi_dict[resn] ]): continue
 
             # Get pose vectors...
             # 8:8+3 => x, y, z
