@@ -193,38 +193,6 @@ def filter_by_resn(atom_dict, chain, resn):
 
 
 
-def resi_to_resn(atom_dict, chain):
-    ''' Form a dictionary with resi:resn kv pairs.
-    '''
-    return { k : v["CA"][4] for k, v in atom_dict[chain].items() if "CA" in v }
-
-
-
-
-def resi_to_resn_by_range(atom_dict, chain, nterm, cterm):
-    ''' Form a resi dictionary based on resi range.
-    '''
-    # Form an empty resi_dict...
-    resi_dict = { i : "MAR" for i in range(nterm, cterm + 1) }
-
-    # Get the chain...
-    chain_dict = atom_dict[chain]
-
-    # For each resi
-    for i in range(nterm, cterm + 1):
-        # Skip missing residues...
-        if not i in chain_dict: continue
-
-        # Skip residues without CA...
-        if not "CA" in chain_dict[i]: continue
-
-        resi_dict[i] = chain_dict[i]["CA"][4]
-
-    return resi_dict
-
-
-
-
 def extract_xyz_from_by_atom(atoms_to_extract, atom_dict, chain, nterm, cterm):
     ''' Extract atomic coordinates of interest (specified in the first
         argument) in the lookup table format.  
@@ -259,8 +227,19 @@ def extract_xyz_from_by_atom(atoms_to_extract, atom_dict, chain, nterm, cterm):
 
 
 
-def extract_xyz_by_seq(seq, atom_dict, chain, nterm, cterm):
-    ''' Extract atomic coordinates from all atoms in a residue.  
+def extract_xyz_by_seq(tar_seq, super_seq, atom_dict, chain, nterm, cterm):
+    ''' Extract xyzs from a protein chain, whose sequecne is tar_seq.  Two
+        sequecnes are considered in this function.  super_seq is used to 
+        distinguish three scenarios about how to extract xyzs.  
+
+        - missing : - != Q (tar != super)
+        - mismatch: N != Q (tar != super)
+        - match   : Q == Q (tar == super)
+
+        In the mismatch scenario, the resn in tar_seq only contributes to main
+        chain atoms (N, CA, C, O) if they exit.  
+
+        In the missing scenario, no xyz is extracted from tar_seq.
     '''
     # Import label_dict and aa_dict...
     label_dict = constant_atomlabel()
@@ -269,44 +248,47 @@ def extract_xyz_by_seq(seq, atom_dict, chain, nterm, cterm):
     # Just a shortcut var name
     chain_dict = atom_dict[chain]
 
-    # Count atoms used for distance matrix analysis...
-    len_xyzs = np.sum( [ len(label_dict[aa_dict[i]]) for i in seq ] )
+    # Count atoms used for distance matrix analysis based on super_seq...
+    len_xyzs = np.sum( [ len(label_dict[aa_dict[i]]) for i in super_seq ] )
 
     # Preallocate memory for storing coordinates...
     xyzs    = np.zeros((len_xyzs, 3))    # Initialize coordinate matrix
-    xyzs[:] = np.nan                         # np.nan for any missing residue
+    xyzs[:] = np.nan                     # np.nan for any missing residue
 
     # From each residue
     mat_i = 0
-    for k, i in enumerate(range(nterm, cterm + 1)):
-        # Select a residue...
-        # seqi always starts from 0
-        resn = aa_dict[seq[k]]
+    for seqi, resi in enumerate(range(nterm, cterm + 1)):
+        # Extract the resn in both sequences...
+        tar_atoms   = label_dict[aa_dict[  tar_seq[seqi]]]
+        super_atoms = label_dict[aa_dict[super_seq[seqi]]]
 
-        # Find the atoms to extract in response to a resn...
-        resi_dict = chain_dict[i]
-        atoms_to_extract = label_dict[resn]
-        for j, atm in enumerate(atoms_to_extract):
+        # Distingusih scenarios
+        # If missing, skip the residue???
+        if tar_seq[seqi] == '-':
+            mat_i += len(super_atoms)
+            continue
+
+        # If mismatch, consider main chain and skip???
+        len_skip = 0
+        if tar_seq[seqi] != super_seq[seqi]:
+            # Consider mainchain atoms only...
+            tar_atoms = label_dict["GLY"]
+
+            # Get the skip length...
+            len_skip = len(super_atoms) - len(tar_atoms)
+
+            ## print(f"{seqi}|{resi} : {tar_seq[seqi]}|{super_seq[seqi]} : {len(tar_atoms)}|{len(super_atoms)}")
+
+        # If match???
+        resi_dict = chain_dict[resi]
+        for j, atm in enumerate(tar_atoms):
             # 8:8+3 => x,y,z
             if atm in resi_dict:
                 xyzs[mat_i] = resi_dict[atm][8:8+3]
             mat_i += 1
+        mat_i += len_skip
 
     return xyzs
-
-
-
-
-def convert_to_GLY(atom_dict, chain, resi_list):
-    ''' It's a utility function to literally convert the resn to GLY.  
-        A use case is to facilitate the full-distance-matrix analysis.  
-        Policy: Non major resn is equivalent to GLY.  
-    '''
-    for resi in resi_list:
-        resi_dict = atom_dict[chain][resi]
-        for k, v in resi_dict.items(): v[4] = "GLY"
-
-    return None
 
 
 
