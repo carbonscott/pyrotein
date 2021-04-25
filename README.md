@@ -37,7 +37,7 @@ included in the `examples` directory.
 The colorschemes used in RMSD distance matrix and SVD analysis are inspired by
 [this paper](https://academic.oup.com/nar/article/44/15/7457/2457750) from Zhong Ren.  
 
-## Structure analysis workflow
+## Basic structure analysis capabilities
 
 ### Import the library
 
@@ -94,81 +94,62 @@ cterm = 348
 rho_dict = pr.atom.extract_segment(atom_dict, chain, nterm, cterm)
 ```
 
-## Structure analysis capabilities
+## Establish metadata table
 
-### Extract coordinates from a segment
+A metadata table keeps track of protein information (PDB, ligand, method, etc).
+It is vital in understanding clustering in the SVD analysis stage.  Meanwhile,
+the metadata table should be computer readable.  For example, I keep metadata in
+a `xlsx` file that can be read by a Python module `openpyxl`.  If you decide to
+use the same module, install it by `pip install openpyxl --user`.  Check out
+`loaddata.py` in `examples` directory to see how to load data from an `xlsx`
+using `openpyxl`.  
 
-Coordinates of backbone atoms (`N`, `CA`, `C`, `O`) are essential for distance
-matrix analysis.  The code below extracts coordinates from a segment of amino
-acids, which range from `nterm` to `cterm` in chain `chain`.  
+![Metadata table](./figures/metadata.rhodopsin.png)
 
-```Python
-# Obtain coordinates...
-peptide = ["N", "CA", "C", "O"]
-xyzs = pr.atom.extract_xyz(peptide, atom_dict, chain, nterm, cterm)
-```
+## Advanced structure analysis capabilities
 
-### Distance matrix
+`pyrotein` is initially designed to perform distance matrix analysis of protein
+structures.  Distance matrix encodes pairwise atomic distance found in a protein
+structure.  
 
-```Python
-# Calculate distance matrix...
-dmat = pr.distance.calc_dmat(xyzs, xyzs)
-```
+![Distance matrix of a bovine rhodopsin structure](./figures/diag.distancematrix.png)
 
-### Root-Mean-Square-Deviation distance matrix
+### Obtain a distance matrix
 
-Let's say we are interested in chains specified in the file `chains.dat`.  
-
-```
-# chains.dat
-6cmo    R
-6fk6    A
-6fk7    A
-6fk8    A
-6fk9    A
-6fka    A
-6fkc    A
-6fkd    A
-6fuf    A
-6nwe    A
-6ofj    A
-6ofj    B
-6oy9    R
-6oya    R
-6pel    A
-6pgs    A
-6ph7    A
-6qno    R
-```
-
-All entries in `chains.dat` have been stored in `pdb` directory.  
-
-The code below accumulates coordinates from chains specified in `chains.dat`.
-Don't worry.  You can run the example code under the `examples` directory.  
+#### Main chain only (N, CA, C, O)
 
 ```Python
 import os
 import numpy as np
 import pyrotein as pr
+from loaddata import load_xlsx, label_TMs
+from display import plot_dmat
 
 # Specify chains to process...
+fl_chain = "chains.comp.xlsx"
+lines    = load_xlsx(fl_chain)
 drc      = "pdb"
-fl_chain = "chains.dat"
-lines    = pr.utils.read_file(fl_chain)
 
-# Define the backbone...
-backbone = ["N", "CA", "C", "O"]
+# Define atoms used for distance matrix analysis...
+peptide = ["N", "CA", "C", "O"]
 
-# Specify the range of atoms from rhodopsin...
+# Specify the range of atoms from adrenoceptor...
 nterm = 1
-cterm = 348
-len_backbone = (cterm - nterm + 1) * len(backbone)
+cterm = 322
 
-# Initialize the matrix that stores accumulated coordinates...
-dmats = np.zeros((len(lines), len_backbone, len_backbone))
+# The first element is to facilitate the indexing during assignment
+len_segments = [ 0,
+                 cterm - nterm + 1,
+               ]
+len_peptide = np.sum(len_segments) * len(peptide)
 
-# Accumulate coordinates...
-for i_fl, (pdb, chain) in enumerate(lines):
+drc_dmat = "dmats"
+pal = "set palette defined ( 0 '#F6FF9E', 0 'white', 0.5 'blue', 1 'navy' )"
+for i_fl, line in enumerate(lines[-1]):
+    # Unpack parameters
+    _, pdb, chain, species = line[:4]
+    betatype = line[10]
+
     # Read coordinates from a PDB file...
     fl_pdb    = f"{pdb}.pdb"
     pdb_path  = os.path.join(drc, fl_pdb)
@@ -178,18 +159,223 @@ for i_fl, (pdb, chain) in enumerate(lines):
     atom_dict = pr.atom.create_lookup_table(atoms_pdb)
 
     # Obtain coordinates...
-    xyzs = pr.atom.extract_backbone_xyz(atom_dict, chain, nterm, cterm)
+    xyzs = pr.atom.extract_xyz_by_atom(peptide, atom_dict, chain, nterm, cterm)
 
-    # Calculate individual distance matrix...
+    # Calculate distance matrix...
     dmat = pr.distance.calc_dmat(xyzs, xyzs)
 
-    # Update the accumulated matrix...
-    dmats[i_fl, :, :] = dmat[:, :]
-
-# Calculate RMSD distance matrix...
-rmsd_dmat = pr.distance.calc_rmsd_mats(dmats)
+    # It is a common practice to visualize a few distance matrix.  
+    # Here is just a way how I use Gnuplot to do so, but you can use
+    # your favourite tool to visualize it.  
+    fl_dmat = os.path.join(drc_dmat, f"{pdb}.{chain}.dmat")
+    plot_dmat(dmat, fl_dmat, lbl = {}, palette = pal, NaN = 0)
 ```
 
+#### Main chain + side chain
+
+If all atoms in main chain and side chain are your interests, `pyrotein` is
+capable of extracting coordinates and build up data correspondence by means of
+sequence alignment result (You have to be careful about the result of sequecne
+alignment.  It can be problematic).  Sequecne related functionalities are
+supposed to be found in `pyrotein.fasta` submodule.  
+
+```Python
+import os
+import numpy as np
+import pyrotein as pr
+from loaddata import load_xlsx
+from display import plot_dmat
+
+# [[[ OBTAIN THE CONSENSUS SEQUENCE ]]]
+# Read the sequence alignment result...
+# [WARNING] !!!sequence alignment is not trustworthy
+fl_aln   = 'seq.align.fasta'
+seq_dict = pr.fasta.read(fl_aln)
+
+# Obtain the consensus sequence (super seq)...
+tally_dict = pr.fasta.tally_resn_in_seqs(seq_dict)
+super_seq  = pr.fasta.infer_super_seq(tally_dict)
+
+
+# [[[ FIND SIZE OF DISTANCE MATRIX ]]]
+# Get the sequence index (alignment) on the n-term side...
+nseqi = pr.fasta.get_lseqi(super_seq)
+
+# User defined range...
+nterm, cterm = 1, 322
+len_seg = cterm - nterm + 1
+super_seg = super_seq[nseqi : nseqi + len_seg]
+
+# Load constant -- atomlabel...
+label_dict = pr.atom.constant_atomlabel()
+aa_dict    = pr.atom.constant_aminoacid_code()
+
+# [[[ ANALYZE PDB ENTRIES ]]]
+# Specify chains to process...
+fl_chain = "chains.comp.xlsx"
+lines    = load_xlsx(fl_chain, sheet = "Sheet1")
+drc      = "pdb"
+drc_dmat = "dmats.full"
+pal = "set palette defined ( 0 '#F6FF9E', 0 'white', 0.5 'blue', 1 'navy' )"
+for i_fl, line in enumerate(lines[-1:]):
+    # Unpack parameters
+    _, pdb, chain, _ = line[:4]
+
+    # Read coordinates from a PDB file...
+    fl_pdb    = f"{pdb}.pdb"
+    pdb_path  = os.path.join(drc, fl_pdb)
+    atoms_pdb = pr.atom.read(pdb_path)
+
+    # Create a lookup table for this pdb...
+    atom_dict = pr.atom.create_lookup_table(atoms_pdb)
+
+    # Obtain the target protein by range...
+    tar_seq = seq_dict[f"{pdb}_{chain}"]
+    tar_seg = tar_seq[nseqi : nseqi + len_seg]
+
+    # Standardize sidechain atoms...
+    pr.atom.standardize_sidechain(atom_dict)
+
+    # Obtain coordinates...
+    xyzs = pr.atom.extract_xyz_by_seq(tar_seg, super_seg, atom_dict, chain, nterm, cterm)
+
+    # Calculate distance matrix...
+    dmat = pr.distance.calc_dmat(xyzs, xyzs)
+
+    fl_dmat = os.path.join(drc_dmat, f"{pdb}.{chain}.dmat")
+    plot_dmat(dmat, fl_dmat, lbl = {}, palette = pal, NaN = 0)
+```
+
+Distance matrix that depict both main chain and side chain.
+
+![](./figures/1f88.A.dmat.png)
+
+### RMSD distance matrix (for structure alignment)
+
+What can we do by putting all distance matrix together like below?
+
+![](./figures/table.distancematrix.png)
+
+If you consider a distance matrix is a picture full of pixels, RMSD distance
+matrix encodes RMSD of all pixel values at a specific location.  RMSD distance
+matrix enables the understanding of rigidity of a protein, that is to say,
+smaller deviation means more rigid, and vice versa.  So it can provide a
+so-called rigid protein framework for structure alignment.  
+
+![](./figures/rmsd.align.png)
+
+Of course, the analysis can be carried out on both main chain only or main +
+side chain scenarios.  You can see how much details are captured while
+considering both main chain and side chain for each residue.  
+
+![](./figures/rmsds.png)
+
+
+### SVD analysis to understand the similarities and differences of protein structures
+
+A significant protein structure analysis `pyrotein` enables is SVD analysis.  An
+example code to enable it:
+
+```Python
+import numpy as np
+import pyrotein as pr
+import os
+from loaddata import load_xlsx
+
+# [[[ OBTAIN THE CONSENSUS SEQUENCE ]]]
+# Read the sequence alignment result...
+# [WARNING] !!!sequence alignment is not trustworthy, need to check manually
+fl_aln   = 'seq.align.fasta'
+seq_dict = pr.fasta.read(fl_aln)
+
+# Obtain the consensus sequence (super seq)...
+tally_dict = pr.fasta.tally_resn_in_seqs(seq_dict)
+super_seq  = pr.fasta.infer_super_seq(tally_dict)
+
+
+# [[[ FIND SIZE OF DISTANCE MATRIX ]]]
+# Get the sequence index (alignment) on the n-term side...
+nseqi = pr.fasta.get_lseqi(super_seq)
+
+# User defined range...
+nterm, cterm = 1, 322
+len_seg = cterm - nterm + 1
+super_seg = super_seq[nseqi : nseqi + len_seg]
+
+# Load constant -- atomlabel...
+label_dict = pr.atom.constant_atomlabel()
+aa_dict    = pr.atom.constant_aminoacid_code()
+
+# Calculate the total length of distance matrix...
+len_dmat = np.sum( [ len(label_dict[aa_dict[i]]) for i in super_seg ] )
+
+# [[[ ANALYZE PDB ENTRIES ]]]
+# Specify chains to process...
+fl_chain = "chains.comp.xlsx"
+lines    = load_xlsx(fl_chain, sheet = "Sheet1")
+drc      = "pdb"
+## dmats = np.zeros((len(lines), len_dmat, len_dmat))
+len_lower_tri = (len_dmat * len_dmat - len_dmat) // 2
+dmats = np.zeros((len(lines), len_lower_tri))
+
+# Process each entry...
+for i_fl, line in enumerate(lines):
+    # Unpack parameters
+    _, pdb, chain, species = line[:4]
+
+    print(f"Processing {pdb}_{chain}")
+
+    # Read coordinates from a PDB file...
+    fl_pdb    = f"{pdb}.pdb"
+    pdb_path  = os.path.join(drc, fl_pdb)
+    atoms_pdb = pr.atom.read(pdb_path)
+
+    # Create a lookup table for this pdb...
+    atom_dict = pr.atom.create_lookup_table(atoms_pdb)
+
+    # Obtain the target protein by range...
+    tar_seq = seq_dict[f"{pdb}_{chain}"]
+    tar_seg = tar_seq[nseqi : nseqi + len_seg]
+
+    # Standardize sidechain atoms...
+    pr.atom.standardize_sidechain(atom_dict)
+
+    # Obtain coordinates...
+    xyzs = pr.atom.extract_xyz_by_seq(tar_seg, super_seg, atom_dict, chain, nterm, cterm)
+
+    # Calculate distance matrix...
+    dmat = pr.distance.calc_dmat(xyzs, xyzs)
+
+    # Convert dmat into one-dimensional array and keep it in dmats...
+    dmats[i_fl, :] = pr.utils.mat2tril(dmat, offset = -1)
+
+# Replace np.nan with mean across samples...
+pr.utils.fill_nan_with_mean(dmats.T, axis = 1)
+
+# SVD...
+# Column as example
+# Row    as feature
+u, s, vh = np.linalg.svd( dmats.T, full_matrices = False )
+
+# Export data for downstream analysis...
+np.save("dmats.full.npy" , dmats)
+np.save("u.full.npy" , u)
+np.save("s.full.npy" , s)
+np.save("vh.full.npy", vh)
+```
+
+A comparison of left singular values is shown below.  
+
+![](./figures/u02s.png)
+
+It also distinguishes entries in the analysis better in main + side chain
+scenario.  Check out the follow scatter plot.  (Rotation might require to make
+them look better.)
+
+![](./figures/c02s.png)
+
+
+## Thoughts behind building data correspondence
 
 ### Standardize sidechain atoms
 
@@ -200,8 +386,7 @@ scenarios and specifies the swapping rules leading to a standard ordering.
 ![](./figures/sidechain.standardize1.png)
 ![](./figures/sidechain.standardize2.png)
 
-Sample code to consider sidechain atom standardization and extract both main
-chain and side chain atoms.  
+Sample code to consider sidechain atom standardization.  
 
 ```Python
 import pyrotein as pr
@@ -219,15 +404,7 @@ atom_dict = pr.atom.create_lookup_table(atom_list)
 
 # Standardize sidechain atoms...
 pr.atom.standardize_sidechain(atom_dict)
-
-# User has to be sure that there is no non-protein residue in the range of nterm..cterm
-nterm, cterm = 1, 322
-xyzs = pr.atom.extract_xyz([], atom_dict, chain, nterm, cterm)
 ```
-
-Distance matrix that depict both main chain and side chain.
-
-![](./figures/1f88.A.dmat.png)
 
 
 ### Examples
@@ -241,16 +418,8 @@ This is a RMSD of a full matrix (main chain + side chain).
 
 ![](./figures/rmsd.full.png)
 
+
 ## Caveats
 
 The warning `RuntimeWarning: Mean of empty slice` is triggered by `np.nanmean`
 when the input array has nothing but `np.nan` values.  
-
-
-<!--
-
-To do:
-
-- SVD analysis
-
--->
