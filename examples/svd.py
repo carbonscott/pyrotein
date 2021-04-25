@@ -9,7 +9,7 @@ from loaddata import load_xlsx
 
 # Specify chains to process...
 fl_chain = "chains.comp.xlsx"
-lines    = load_xlsx(fl_chain)
+lines    = load_xlsx(fl_chain, sheet = "Sheet2")
 drc      = "pdb"
 
 # Define atoms used for distance matrix analysis...
@@ -36,7 +36,7 @@ for i_fl, line in enumerate(lines):
     atom_dict = pr.atom.create_lookup_table(atoms_pdb)
 
     # Obtain coordinates...
-    xyzs = pr.atom.extract_backbone_xyz(atom_dict, chain, nterm, cterm)
+    xyzs = pr.atom.extract_xyz_by_atom(backbone, atom_dict, chain, nterm, cterm)
 
     # Calculate distance matrix...
     dmat = pr.distance.calc_dmat(xyzs, xyzs)

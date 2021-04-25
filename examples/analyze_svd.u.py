@@ -55,35 +55,26 @@ num_cpu = mp.cpu_count() // 2
 
 # Define a series of rotation...
 rotations = [
-    [2, 3,  28.6],
-    [3, 4, -2.0],
-    [4, 5,  -20],
-    [5, 6,   40],
-    [7, 8,   20],
-
-    [2, 4,   0],
-    [3, 5,  -4],
-    [4, 6,  10],
-    [5, 7,  20],
-    [6, 8, -8.5],
-
-    [2, 5,  20],
-
-    [3, 8,  -4],
-    [2, 7,  -20],
-    [6, 7,   18],
-    [8, 9,  26],
-    [3, 7,  -20],
-    [6, 9,  -30],
-    [2, 6,   2.5],
+    [3, 2, -25],
+    [3, 4,  10],
+    [5, 3,  7],
+    [2, 4,  5],
+    [5, 2, -10],
+    [4, 6,  20],
+    [8, 3, 8],
+    [6, 5, -40],
+    [5, 7,  18],
+    [7, 6, -25],
+    [7, 2,  20],
+    [4, 3,  4],
+    [3, 7,  28],
+    [7, 6,  10],
+    [9, 6,  30],
 ]
-disp_index = 5    # 0-based Python convention
+disp_index = -1    # 0-based Python convention
 if len(rotations): rank1_last, rank2_last = rotations[disp_index][0:0 + 2]
 for rank1, rank2, theta in rotations:
     gv.givens_rotation(u, s, c, rank1, rank2, theta, index_from_zero = False)
-
-# Reverse signs for visualization purpose ONLY...
-reverse_sign(u, c, 6, index_from_zero = False)
 
 # Create labels...
 entries = ['-'.join(i[1:1+2]) for i in lines]
@@ -129,13 +120,13 @@ if 1:
                                      binning = 1,
                                      intst_min = -0.01,
                                      intst_max =  0.01,
-                                     fl_path = "eps_svd.rot",
+                                     fl_path = "svd.u",
                                      fl_postfix = f'',
                                      index_from_zero = False)
     if 1:
         num_job = np.min([top, num_cpu])
         with mp.Pool(num_job) as proc:
-            proc.map( plot_left_singualr_by_rank, range(2, top) )
+            proc.map( plot_left_singualr_by_rank, range(top, top + 10) )
     if 0:
         num_job = 2
         with mp.Pool(num_job) as proc:
