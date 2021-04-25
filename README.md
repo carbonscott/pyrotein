@@ -413,12 +413,6 @@ The `examples` directory contains two examples about distance matrix and RMSD
 distance matrix.  Two visualization choices are provided via `Gnuplot` and
 `matplotlib`.  
 
-Here is an sample figure of a RMSD distance matrix in the `examples` directory.
-This is a RMSD of a full matrix (main chain + side chain).  
-
-![](./figures/rmsd.full.png)
-
-
 ## Caveats
 
 The warning `RuntimeWarning: Mean of empty slice` is triggered by `np.nanmean`
