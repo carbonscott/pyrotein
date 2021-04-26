@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from .utils import get_key_by_max_value
+from .atom  import constant_atomlabel, constant_aminoacid_code
 
 
 def read(fl_fasta):
@@ -55,6 +56,17 @@ def seqi_null(seq, null = '-'):
     ''' Return a list of sequence index when resn is not '-'.
     '''
     return [ k for k, v in mask_seq(seq, null = null).items() if not v ]
+
+
+
+
+def resi_to_seqi(resi, super_seq, nterm):
+    ''' Convert resi to seqi.
+    '''
+    label_dict = constant_atomlabel()
+    aa_dict = constant_aminoacid_code()
+
+    return sum( len(label_dict[aa_dict[super_seq[seqi]]]) for seqi in range(resi - nterm) )
 
 
 
