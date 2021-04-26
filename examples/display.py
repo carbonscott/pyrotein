@@ -365,6 +365,7 @@ def plot_left_singular(u, rank, length_mat,
                                 cmds_top        = [""],
                                 cmds_bottom     = [""],
                                 fl_postfix      = '',
+                                quick           = False,
                                 index_from_zero = True):
     ''' Plot left singular value as a lower triangular distance matrix.
     '''
@@ -431,20 +432,21 @@ def plot_left_singular(u, rank, length_mat,
     cmds_guideline_bottom.extend(cmds_bottom)
 
     # Visualization...
-    plot_dmat(dmat_bin, 
-              fl_export, 
-              lbl           = lbls,
-              lbl_fontsize =  lbl_fontsize,
-              intst_min     = intst_min,
-              intst_max     = intst_max,
-              width         = width,     # inch
-              height        = height,     # inch
-              fontsize      = fontsize,
-              linewidth     = linewidth,
-              palette       = pal, 
-              vrange        = vrange,
-              cmds_top      = cmds_guideline_top,
-              cmds_bottom   = cmds_guideline_bottom)
+    plotfunc = quickplot_dmat if quick else plot_dmat
+    plotfunc(dmat_bin, 
+             fl_export, 
+             lbl           = lbls,
+             lbl_fontsize =  lbl_fontsize,
+             intst_min     = intst_min,
+             intst_max     = intst_max,
+             width         = width,     # inch
+             height        = height,     # inch
+             fontsize      = fontsize,
+             linewidth     = linewidth,
+             palette       = pal, 
+             vrange        = vrange,
+             cmds_top      = cmds_guideline_top,
+             cmds_bottom   = cmds_guideline_bottom)
 
     return None
 
