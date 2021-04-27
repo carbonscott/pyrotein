@@ -381,7 +381,7 @@ def plot_left_singular(u, rank, length_mat,
     # Define a color palette...
     # Colorscheme is inspired by [this paper](https://academic.oup.com/nar/article/44/15/7457/2457750)
     pal = "set palette defined \
-           (-10 '#800000', -5 'red', -1 'white', 0 'seagreen', \
+           (-10 '#F6FF9E', -10 '#800000', -5 'red', -1 'white', 0 'seagreen', \
               1 'white'  , 5 'blue', 10 'navy')"
 
     # Filename to export...
