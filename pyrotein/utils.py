@@ -4,6 +4,7 @@
 import numpy as np
 from operator import itemgetter
 from itertools import groupby
+from .atom import constant_atomlabel, constant_aminoacid_code
 
 
 def bin_image(img_orig, binning = 4, mode = 1, nan_replace = 0):
@@ -160,3 +161,30 @@ def get_key_by_max_value(obj_dict):
     ''' A utility to fetch key corresponding to the max value in a dict.  
     '''
     return max(obj_dict.items(), key = lambda x: x[1])[0]
+
+
+
+
+def sparse_mask(super_seg):
+    ''' A mask to remove trivial values from intra-residue distances in a
+        sparse matrix.
+    '''
+    # Load constant -- atomlabel...
+    label_dict = constant_atomlabel()
+    aa_dict    = constant_aminoacid_code()
+
+    # Calculate the total length of distance matrix...
+    len_list = [ len(label_dict[aa_dict[i]]) for i in super_seg ]
+    len_dmat = np.sum( len_list )
+
+    # Form a placeholder matrix with value one by default...
+    dmask = np.zeros( (len_dmat, len_dmat))
+    dmask[:] = 1
+
+    # Assign zero to trivial values that only measure intra-residue distance...
+    pos_current = 0
+    for i in len_list:
+        dmask[ pos_current : pos_current + i, pos_current : pos_current + i ] = 0.0
+        pos_current += i
+
+    return dmask
