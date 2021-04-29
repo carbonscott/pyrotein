@@ -10,23 +10,24 @@ import tempfile
 
 
 def plot_dmat(
-    dmat,                  # Input data, which is a distance matrix
-    fl_dmat,               # Filename of the exported file
-    lbl,                   # Labels used to mark on the diagonal
-    lbl_fontsize = 8,     # Fontsize for label
-    width         = 6,     # inch
-    height        = 7,     # inch
-    fontsize      = 14,    # pt
-    linewidth     = 1.0,   # pt
-    palette       = "",    # Palette definition
-    intst_min     = "0",   # Min intensity value
-    intst_max     = "*",   # Max intensity value
+    dmat,                    # Input data, which is a distance matrix
+    fl_dmat,                 # Filename of the exported file
+    lbl,                     # Labels used to mark on the diagonal
+    lbl_fontsize = 8,        # Fontsize for label
+    width         = 6,       # inch
+    height        = 7,       # inch
+    fontsize      = 14,      # pt
+    linewidth     = 1.0,     # pt
+    palette       = "",      # Palette definition
+    intst_min     = "0",     # Min intensity value
+    intst_max     = "*",     # Max intensity value
     vrange        = [],
     showzero      = True,
     showcolorbox  = True,
     NaN           = "NaN",
-    cmds_top      = [],    # Customized command for upper panel
-    cmds_bottom   = [],    # Customized command for bottom panel
+    mode          = "image", # "image", "sparse", "pm3d"
+    cmds_top      = [],      # Customized command for upper panel
+    cmds_bottom   = [],      # Customized command for bottom panel
     ):
     assert len(vrange) == 0 or len(vrange) == 2, "vrange has to be an empty or 2-member tuple.  "
 
@@ -36,6 +37,33 @@ def plot_dmat(
 
     # Get the mean...
     column_mean_dmat = np.nanmean(dmat, axis = 0, keepdims = False)
+
+    # Draw lbl (optional)...
+    cmds_lbl_top = [""]
+    cmds_lbl_bottom = [""]
+    color_lbl = '#BBBBBB'
+    if len(lbl) > 0: 
+        for k, (b,e) in lbl.items():
+            # Vertical lines (beginning of a region)
+            cmd = f"set arrow front from {b-1},graph 0 to {b-1},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+            cmds_lbl_top.append(cmd)
+
+            # Vertical lines (end of a region)
+            cmd = f"set arrow front from {e-1},graph 0 to {e-1},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+            cmds_lbl_top.append(cmd)
+
+            # Horizontal lines (beginning of a region)
+            cmd = f"set arrow front from graph 0,first {b-1} to graph 1,first {b-1} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+
+            # Horizontal lines (end of a region)
+            cmd = f"set arrow front from graph 0,first {e-1} to graph 1,first {e-1} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+
+            # Put labels on the diagonal...
+            lbl[k] = [ (b + e) // 2, (b + e) // 2 ]
 
     # [[[ Visualize ]]]
     num_items = len(dmat)
@@ -49,7 +77,9 @@ def plot_dmat(
     fl_temp = tempfile.mktemp(".temp.dat")
     with open(fl_temp,'w') as fh:
         for j in range(num_items):
-            for k in range(j):
+            for k in range(j if mode != 'image' else num_items):
+                if mode == "sparse":
+                    if not intst_min < dmat[j, k] < intst_max: continue
                 val = NaN if np.isnan(dmat[j, k]) else dmat[j, k]
                 fh.write(f"{k} {j} {val}\n")
             fh.write("\n")
@@ -94,6 +124,9 @@ def plot_dmat(
     gp("set view map")
 
     if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth 1.0 linecolor rgb 'black'")
+
+    for cmd in cmds_lbl_top:
+        gp(cmd)
 
     for cmd in cmds_top:
         gp(cmd)
@@ -137,159 +170,24 @@ def plot_dmat(
     gp(f"set cbtics font ',{lbl_fontsize}'")
     if not showcolorbox: gp(f"unset colorbox")
 
+    for cmd in cmds_lbl_bottom:
+        gp(cmd)
+
     for cmd in cmds_bottom:
         gp(cmd)
 
-    gp("set view map")
-    gp(f"splot '{fl_temp}' using 1:2:3 with pm3d")
+    if mode == 'sparse':
+        gp(f"plot '{fl_temp}' using 1:2:3 with points pointtype 6 pointsize 0.5 linecolor palette")
+    if mode == 'image':
+        gp(f"plot '{fl_temp}' using 1:2:3 with image")
+    if mode == 'pm3d':
+        gp("set view map")
+        gp(f"splot '{fl_temp}' using 1:2:3 with pm3d")
 
     gp("unset multiplot")
     gp("exit")
 
     return None
-
-
-
-
-def quickplot_dmat(
-    dmat,                  # Input data, which is a distance matrix
-    fl_dmat,               # Filename of the exported file
-    lbl,                   # Labels used to mark on the diagonal
-    lbl_fontsize = 8,     # Fontsize for label
-    width         = 6,     # inch
-    height        = 7,     # inch
-    fontsize      = 14,    # pt
-    linewidth     = 1.0,   # pt
-    palette       = "",    # Palette definition
-    intst_min     = "0",   # Min intensity value
-    intst_max     = "*",   # Max intensity value
-    vrange        = [],
-    showzero      = True,
-    showcolorbox  = True,
-    NaN           = "NaN",
-    cmds_top      = [],    # Customized command for upper panel
-    cmds_bottom   = [],    # Customized command for bottom panel
-    ):
-    assert len(vrange) == 0 or len(vrange) == 2, "vrange has to be an empty or 2-member tuple.  "
-
-    # Partial???
-    range_default = ("*", "*")
-    if len(vrange) == 2: fl_dmat = f"{fl_dmat}.zoom"
-
-    # Get the mean...
-    column_mean_dmat = np.nanmean(dmat, axis = 0, keepdims = False)
-
-    # [[[ Visualize ]]]
-    num_items = len(dmat)
-    if intst_max == "*":
-        intst_min = np.nanmin(dmat)
-        intst_max = np.nanmax(dmat)
-    intst_column_mean_min = np.min( [np.nanmin(column_mean_dmat), 0] )
-    intst_column_mean_max = np.max( [np.nanmax(column_mean_dmat), 0] )
-
-    # Create tempfile to visualize half matrix...
-    fl_temp = tempfile.mktemp(".temp.dat")
-    with open(fl_temp,'w') as fh:
-        for j in range(num_items):
-            ## for k in range(j):
-            for k in range(num_items):
-                val = NaN if np.isnan(dmat[j, k]) else dmat[j, k]
-                fh.write(f"{k} {j} {val}\n")
-            fh.write("\n")
-
-    # Begin Gnuplot
-    gp = GnuplotPy3.GnuplotPy3()
-    gp(f"set terminal postscript eps  size {width}, {height} \\")
-    gp(f"                             enhanced color \\")
-    gp(f"                             font 'Helvetica,{fontsize}' \\")
-    gp(f"                             linewidth {linewidth}")
-
-    # Declare the filename to export...
-    gp(f"set output '{fl_dmat}.eps'")
-    gp("unset key")
-
-    # Declare a multiplot...
-    gp("set origin 0,0")
-    gp("set size 1,1")
-    gp("unset bmargin")
-    gp("unset tmargin")
-    gp("unset lmargin")
-    gp("unset rmargin")
-    gp("set multiplot title ''")
-
-
-    # PLOT 1: mean dmat...
-    gp(f"unset xrange")
-    gp(f"unset yrange")
-    gp("unset xtics")
-    gp("unset ytics")
-    gp(f"unset logscale")
-    gp("set origin 0,0.70")
-    gp("set size   1,0.15")
-    gp("set tmargin 0")
-    gp("set bmargin at screen 0.70")
-    gp("set lmargin at screen 0.10")
-    gp("set rmargin at screen 0.85")
-    gp(f"set xrange [-1:{num_items}]")
-    gp(f"set yrange [{intst_column_mean_min}:{intst_column_mean_max}]")
-    gp("set key top right")
-    gp(f"set border linewidth {linewidth}")
-    gp("set view map")
-
-    if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth 1.0 linecolor rgb 'black'")
-
-    for cmd in cmds_top:
-        gp(cmd)
-
-    gp(f"plot '-' using 1:2 with lines linewidth 1.0 linecolor rgb 'black' title 'Column mean'")
-    for i,v in enumerate(column_mean_dmat):
-        gp(f"{i} {v}")
-    gp("e")
-
-
-    # PLOT 2: distance matrix...
-    gp(f"unset arrow")
-    gp(f"unset key")
-    gp(f"unset xrange")
-    gp(f"unset yrange")
-    gp(f"unset xtics")
-    gp(f"unset ytics")
-    gp(f"unset logscale")
-    gp("unset bmargin")
-    gp("unset tmargin")
-    gp("unset lmargin")
-    gp("unset rmargin")
-    gp("set origin 0,0.0")
-    gp("set size   1.0,0.70")
-    gp("set tmargin at screen 0.7")
-    gp("set bmargin at screen 0.05")
-    gp("set lmargin at screen 0.10")
-    gp("set rmargin at screen 0.85")
-    gp(f"set xrange [-1          :{num_items}   ]")
-    gp(f"set yrange [{num_items}   :-1          ]")
-    gp(f"set border linewidth {linewidth}")
-
-    for k, (x, y) in lbl.items():
-        gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {lbl_fontsize}' front")
-
-    if palette == "":
-        gp("set palette defined ( -0.001 'white', 0 'blue', 0.5 'light-grey', 1 'red' )")
-    else:
-        gp(palette)
-    gp(f"set cbrange [{intst_min}:{intst_max}]")
-    gp(f"set cbtics font ',{lbl_fontsize}'")
-    if not showcolorbox: gp(f"unset colorbox")
-
-    for cmd in cmds_bottom:
-        gp(cmd)
-
-    gp(f"plot '{fl_temp}' using 1:2:3 with image")
-
-    gp("unset multiplot")
-    gp("exit")
-
-    return None
-
 
 
 
@@ -350,7 +248,6 @@ def plot_singular(s, top = 3, fl_export = "singular",
 
 def plot_left_singular(u, rank, length_mat, 
                                 guidelines      = {}, 
-                                showguidelines  = True,
                                 width           = 6,
                                 height          = 7,
                                 linewidth       = 1.0,
@@ -365,7 +262,7 @@ def plot_left_singular(u, rank, length_mat,
                                 cmds_top        = [""],
                                 cmds_bottom     = [""],
                                 fl_postfix      = '',
-                                quick           = False,
+                                mode            = 'image',
                                 index_from_zero = True):
     ''' Plot left singular value as a lower triangular distance matrix.
     '''
@@ -396,57 +293,20 @@ def plot_left_singular(u, rank, length_mat,
     intst_min = -bound * frac if intst_min == None else intst_min
     intst_max =  bound * frac if intst_max == None else intst_max
 
-    # Draw guidelines (optional)...
-    lbls = {}
-    cmds_guideline_top = [""]
-    cmds_guideline_bottom = [""]
-    color_guideline = '#BBBBBB'
-    if len(guidelines) > 0: 
-        for k, (b,e) in guidelines.items():
-            # Vertical lines (beginning of a region)
-            cmd = f"set arrow front from {b-1},graph 0 to {b-1},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_guideline}'"
-            cmds_guideline_bottom.append(cmd)
-            cmds_guideline_top.append(cmd)
-
-            # Vertical lines (end of a region)
-            cmd = f"set arrow front from {e-1},graph 0 to {e-1},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_guideline}'"
-            cmds_guideline_bottom.append(cmd)
-            cmds_guideline_top.append(cmd)
-
-            # Horizontal lines (beginning of a region)
-            cmd = f"set arrow front from graph 0,first {b-1} to graph 1,first {b-1} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_guideline}'"
-            cmds_guideline_bottom.append(cmd)
-
-            # Horizontal lines (end of a region)
-            cmd = f"set arrow front from graph 0,first {e-1} to graph 1,first {e-1} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_guideline}'"
-            cmds_guideline_bottom.append(cmd)
-
-            # Put labels on the diagonal...
-            lbls[k] = [ (b + e) // 2, (b + e) // 2 ]
-    if not showguidelines: 
-        cmds_guideline_top = []
-        cmds_guideline_bottom = []
-
-    # Extends the commands...
-    cmds_guideline_top.extend(cmds_top)
-    cmds_guideline_bottom.extend(cmds_bottom)
-
     # Visualization...
-    plotfunc = quickplot_dmat if quick else plot_dmat
-    plotfunc(dmat_bin, 
-             fl_export, 
-             lbl           = lbls,
-             lbl_fontsize =  lbl_fontsize,
-             intst_min     = intst_min,
-             intst_max     = intst_max,
-             width         = width,     # inch
-             height        = height,     # inch
-             fontsize      = fontsize,
-             linewidth     = linewidth,
-             palette       = pal, 
-             vrange        = vrange,
-             cmds_top      = cmds_guideline_top,
-             cmds_bottom   = cmds_guideline_bottom)
+    plot_dmat(dmat_bin, 
+              fl_export, 
+              lbl           = guidelines,
+              lbl_fontsize =  lbl_fontsize,
+              intst_min     = intst_min,
+              intst_max     = intst_max,
+              width         = width,      # inch
+              height        = height,     # inch
+              fontsize      = fontsize,
+              linewidth     = linewidth,
+              palette       = pal, 
+              vrange        = vrange,
+              mode          = mode,)
 
     return None
 
