@@ -177,7 +177,7 @@ def plot_dmat(
         gp(cmd)
 
     if mode == 'sparse':
-        gp(f"plot '{fl_temp}' using 1:2:3 with points pointtype 6 pointsize 0.5 linecolor palette")
+        gp(f"plot '{fl_temp}' using 1:2:3 with points pointtype 6 pointsize 0.5 linewidth 0.5 linecolor palette")
     if mode == 'image':
         gp(f"plot '{fl_temp}' using 1:2:3 with image")
     if mode == 'pm3d':
@@ -253,6 +253,7 @@ def plot_left_singular(u, rank, length_mat,
                                 linewidth       = 1.0,
                                 fontsize        = 14,
                                 lbl_fontsize    = 10,
+                                palette         = None,
                                 vrange          = [],
                                 frac            = 0.1, 
                                 binning         = 4, 
@@ -277,9 +278,10 @@ def plot_left_singular(u, rank, length_mat,
 
     # Define a color palette...
     # Colorscheme is inspired by [this paper](https://academic.oup.com/nar/article/44/15/7457/2457750)
-    pal = "set palette defined \
-           (-10 '#F6FF9E', -10 '#800000', -5 'red', -1 'white', 0 'seagreen', \
-              1 'white'  , 5 'blue', 10 'navy')"
+    if palette is None:
+        palette = "set palette defined \
+               (-10 '#F6FF9E', -10 '#800000', -5 'red', -1 'white', 0 'seagreen', \
+                  1 'white'  , 5 'blue', 10 'navy')"
 
     # Filename to export...
     fl_export = os.path.join(fl_path, f"u{rank:02d}" + fl_postfix)
@@ -304,7 +306,7 @@ def plot_left_singular(u, rank, length_mat,
               height        = height,     # inch
               fontsize      = fontsize,
               linewidth     = linewidth,
-              palette       = pal, 
+              palette       = palette, 
               vrange        = vrange,
               mode          = mode,)
 
