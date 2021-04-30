@@ -25,7 +25,9 @@ def plot_dmat(
     showzero      = True,
     showcolorbox  = True,
     NaN           = "NaN",
+    temp          = True,
     mode          = "image", # "image", "sparse", "pm3d"
+    showsparselabel = False,
     cmds_top      = [],      # Customized command for upper panel
     cmds_bottom   = [],      # Customized command for bottom panel
     ):
@@ -74,7 +76,8 @@ def plot_dmat(
     intst_column_mean_max = np.max( [np.nanmax(column_mean_dmat), 0] )
 
     # Create tempfile to visualize half matrix...
-    fl_temp = tempfile.mktemp(".temp.dat")
+    fl_temp = f"{fl_dmat}.dat"
+    if temp: fl_temp = tempfile.mktemp(".temp.dat")
     with open(fl_temp,'w') as fh:
         for j in range(num_items):
             for k in range(j if mode != 'image' else num_items):
@@ -177,7 +180,11 @@ def plot_dmat(
         gp(cmd)
 
     if mode == 'sparse':
-        gp(f"plot '{fl_temp}' using 1:2:3 with points pointtype 6 pointsize 0.5 linewidth 0.5 linecolor palette")
+        gp("plot \\")
+        gp(f"'{fl_temp}' using 1:2:3 with points pointtype 6 pointsize 0.5 linewidth 0.5 linecolor palette, \\")
+        if showsparselabel:
+            gp(f"'{fl_temp}' using 1:2:(sprintf('%d,%d', int($1), int($2))) with labels offset 0.5,.3 rotate by 45 font ',3', \\")
+        gp("")
     if mode == 'image':
         gp(f"plot '{fl_temp}' using 1:2:3 with image")
     if mode == 'pm3d':
