@@ -188,3 +188,34 @@ def sparse_mask(super_seg):
         pos_current += i
 
     return dmask
+
+
+
+
+def freq_density(data, bin_cap = 100):
+    ''' Return frequency density.
+    '''
+    # Flatten data...
+    data_flat = data.reshape(-1)
+
+    # Sort data...
+    data_sort = np.sort(data_flat)
+
+    # Obtain the length of data...
+    s, = data_sort.shape
+
+    # Go through the array and figure out bin_val and bin_edge...
+    bin_val  = []
+    bin_edge = []
+    bin_step = bin_cap
+    for i in range(0, s, bin_cap):
+        if i + bin_cap > s: bin_step = s - i
+        data_seg = data_sort[i : i + bin_step]
+        b, e     = data_seg[0], data_seg[-1]
+        den      = bin_step / (e - b)
+        bin_val.append(den)
+        bin_edge.append(b)
+        ## bin_edge.append([b, e])
+    bin_edge.append( data_sort[-1] )
+
+    return bin_val, bin_edge

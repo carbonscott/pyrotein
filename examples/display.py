@@ -451,3 +451,34 @@ def select_items(lines, col, offset = 0):
         if not val in citems: citems[val] = [i + offset]
         else: citems[val].append(i + offset)
     return citems
+
+
+
+
+def showHistogram(data, bin_cap, rng, title, cmds = []):
+    # Find histogram...
+    data_val, data_rng = pr.utils.freq_density(data, bin_cap = bin_cap)
+
+    gp = GnuplotPy3.GnuplotPy3()
+    gp("set terminal postscript eps  size 3.5, 2.62 \\")
+    gp("                             enhanced color \\")
+    gp("                             font 'Helvetica,14' \\")
+    gp("                             linewidth 2")
+    gp(f"set output '{title}.eps'")
+    gp("unset key")
+
+    for cmd in cmds:
+        gp(cmd)
+
+    gp("plot '-' using 1:2 with lines linewidth 1 linecolor rgb 'black'")
+
+    for i in range(len(data_val)): 
+        if data_rng[i] < rng[0]: continue
+        if data_rng[i+1] > rng[1]: continue
+        gp(f"{data_rng[i]} {data_val[i]}")  
+        gp(f"{data_rng[i+1]} {data_val[i]}")  
+    gp("e")
+
+    gp("exit")
+
+    return None
