@@ -219,3 +219,23 @@ def freq_density(data, bin_cap = 100):
     bin_edge.append( data_sort[-1] )
 
     return bin_val, bin_edge
+
+
+
+
+def label_dmat(super_seg, nterm, cterm):
+    # Load constant -- atomlabel...
+    label_dict = constant_atomlabel()
+    aa_dict    = constant_aminoacid_code()
+
+    # Go through residue and build a list of (resi, resn, atom)...
+    label_list = []
+    for seqi, resi in enumerate(range(nterm, cterm + 1)):
+        aa        = super_seg[seqi]
+        resn      = aa_dict[aa]
+        atom_list = label_dict[resn]
+        for atm in atom_list:
+            label = f"{resi}.{resn}.{atm}"
+            label_list.append(label)
+
+    return label_list
