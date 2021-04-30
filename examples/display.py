@@ -462,8 +462,8 @@ def showHistogram(data, bin_cap, rng, title, cmds = []):
     gp = GnuplotPy3.GnuplotPy3()
     gp("set terminal postscript eps  size 3.5, 2.62 \\")
     gp("                             enhanced color \\")
-    gp("                             font 'Helvetica,14' \\")
-    gp("                             linewidth 2")
+    gp("                             font 'Helvetica,10' \\")
+    gp("                             linewidth 1")
     gp(f"set output '{title}.eps'")
     gp("unset key")
 
