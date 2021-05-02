@@ -239,3 +239,14 @@ def label_dmat(super_seg, nterm, cterm):
             label_list.append(label)
 
     return label_list
+
+
+
+
+def tally_int(int_list):
+    int_dict = {}
+    for i in int_list:
+        if not i in int_dict: int_dict[i] = 1
+        int_dict[i] += 1
+
+    return int_dict
