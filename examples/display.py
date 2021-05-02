@@ -82,7 +82,8 @@ def plot_dmat(
         for j in range(num_items):
             for k in range(j if mode != 'image' else num_items):
                 if mode == "sparse":
-                    if not intst_min < dmat[j, k] < intst_max: continue
+                    if np.isnan(dmat[j, k]): continue
+                    ## if not intst_min < dmat[j, k] < intst_max: continue
                 val = NaN if np.isnan(dmat[j, k]) else dmat[j, k]
                 fh.write(f"{k} {j} {val}\n")
             fh.write("\n")
@@ -270,6 +271,8 @@ def plot_left_singular(u, rank, length_mat,
                                 cmds_top        = [""],
                                 cmds_bottom     = [""],
                                 fl_postfix      = '',
+                                temp            = True,
+                                showsparselabel = False,
                                 mode            = 'image',
                                 index_from_zero = True):
     ''' Plot left singular value as a lower triangular distance matrix.
@@ -305,17 +308,19 @@ def plot_left_singular(u, rank, length_mat,
     # Visualization...
     plot_dmat(dmat_bin, 
               fl_export, 
-              lbl           = guidelines,
-              lbl_fontsize =  lbl_fontsize,
-              intst_min     = intst_min,
-              intst_max     = intst_max,
-              width         = width,      # inch
-              height        = height,     # inch
-              fontsize      = fontsize,
-              linewidth     = linewidth,
-              palette       = palette, 
-              vrange        = vrange,
-              mode          = mode,)
+              lbl             = guidelines,
+              lbl_fontsize    =  lbl_fontsize,
+              intst_min       = intst_min,
+              intst_max       = intst_max,
+              width           = width,      # inch
+              height          = height,     # inch
+              fontsize        = fontsize,
+              linewidth       = linewidth,
+              palette         = palette, 
+              vrange          = vrange,
+              temp            = temp,
+              showsparselabel = showsparselabel,
+              mode            = mode,)
 
     return None
 
