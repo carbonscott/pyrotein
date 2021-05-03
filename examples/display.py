@@ -12,8 +12,10 @@ import tempfile
 def plot_dmat(
     dmat,                    # Input data, which is a distance matrix
     fl_dmat,                 # Filename of the exported file
-    lbl,                     # Labels used to mark on the diagonal
+    lbl = {},                # Labels used to mark on the diagonal
     lbl_fontsize = 8,        # Fontsize for label
+    diaglbl       = {},      # diagonal label (usually for showing index)
+    diaglblfontsize = 5,
     width         = 6,       # inch
     height        = 7,       # inch
     fontsize      = 14,      # pt
@@ -166,6 +168,9 @@ def plot_dmat(
     for k, (x, y) in lbl.items():
         gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {lbl_fontsize}' front")
 
+    for k, (x, y) in diaglbl.items():
+        gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {diaglblfontsize}' front")
+
     if palette == "":
         gp("set palette defined ( -0.001 'white', 0 'blue', 0.5 'light-grey', 1 'red' )")
     else:
@@ -255,7 +260,9 @@ def plot_singular(s, top = 3, fl_export = "singular",
 
 
 def plot_left_singular(u, rank, length_mat, 
-                                guidelines      = {}, 
+                                lbl             = {}, 
+                                diaglbl         = {},
+                                diaglblfontsize = 5,
                                 width           = 6,
                                 height          = 7,
                                 linewidth       = 1.0,
@@ -308,8 +315,10 @@ def plot_left_singular(u, rank, length_mat,
     # Visualization...
     plot_dmat(dmat_bin, 
               fl_export, 
-              lbl             = guidelines,
-              lbl_fontsize    =  lbl_fontsize,
+              lbl             = lbl,
+              lbl_fontsize    = lbl_fontsize,
+              diaglbl         = diaglbl,
+              diaglblfontsize = diaglblfontsize,
               intst_min       = intst_min,
               intst_max       = intst_max,
               width           = width,      # inch
