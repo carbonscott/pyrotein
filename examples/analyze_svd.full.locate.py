@@ -45,14 +45,27 @@ dist_list = pr.utils.read_file(f"{fl_comp}", numerical = True)
 
 # Tally residues of interaction...
 # Calling it pm is because of the visualization of it in pymol
+# d_list to support sorting by distance...
 pm_list = []
-for (x, y, _) in dist_list:
+d_list  = []
+for (x, y, d) in dist_list:
     x, y = int(x), int(y)
     resi1, resn1, atom1 = label_list[int(x)].split('.')
     resi2, resn2, atom2 = label_list[int(y)].split('.')
     pm_list.extend((int(resi1), int(resi2)))
-dmin, dmax = 200, 10000
-pm_filter_list = filter( lambda x: dmin < x < dmax, pm_list )
+    d_list.append((int(resi1), int(resi2), d))
+
+# Sort d_list by distance...
+d_list.sort( key = lambda x: x[2] )
+fl_d = f'locate.dist.{comp}.{domain}.dat'
+with open(fl_d,'w') as fh:
+    for x, y, d in d_list:
+        fh.write(f"{x:4d}  {y:4d}  {d:.4f}")
+        fh.write("\n")
+
+# Tally...
+tmin, tmax = 200, 10000
+pm_filter_list = filter( lambda x: tmin < x < tmax, pm_list )
 pm_tally_dict = pr.utils.tally_int(pm_filter_list)
 
 
@@ -62,7 +75,7 @@ gp("set terminal postscript eps  size 3.5, 2.62 \\")
 gp("                             enhanced color \\")
 gp("                             font 'Helvetica,12' \\")
 gp("                             linewidth 1")
-gp(f"set output 'pm_tally.{comp}.{domain}.eps'")
+gp(f"set output 'locate.tally.{comp}.{domain}.eps'")
 gp(f"set log y")
 
 gp(f"plot \\")
