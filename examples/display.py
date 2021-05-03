@@ -486,9 +486,10 @@ def showHistogram(data, bin_cap, rng, title, cmds = []):
     gp("                             font 'Helvetica,10' \\")
     gp("                             linewidth 1")
     gp(f"set output '{title}.eps'")
+    gp(f"set encoding utf8")
     gp("unset key")
     gp("set xlabel 'Distance (\305)'")
-    gp("set ylabel 'Frequency density (1/\305)'")
+    gp("set ylabel 'Population density (1/\305)'")
 
     for cmd in cmds:
         gp(cmd)

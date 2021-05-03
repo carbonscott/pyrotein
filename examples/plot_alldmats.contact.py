@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-## import sys
-## sys.path.insert(0, "/home/scott/Dropbox/codes/pyrotein")
+import sys
+sys.path.insert(0, "/home/scott/Dropbox/codes/pyrotein")
 ## sys.path.insert(0, "/Users/scott/Dropbox/codes/pyrotein")
 
 import os
@@ -48,16 +48,27 @@ for k, v in labels_TM.items():
     labels_TM[k] = [ pr.fasta.resi_to_seqi(i, super_seg, nterm) for i in v ]
 
 ## pal = "set palette defined ( 0 '#F6FF9E', 0 'white', 0.5 'blue', 1 'navy' )"
+## pal = '''
+## set palette negative defined ( \
+##     0 '#D53E4F',\
+##     1 '#F46D43',\
+##     2 '#FDAE61',\
+##     3 '#FEE08B',\
+##     4 '#E6F598',\
+##     5 '#ABDDA4',\
+##     6 '#66C2A5',\
+##     7 '#3288BD' )
+## '''
 pal = '''
-set palette negative defined ( \
-    0 '#D53E4F',\
-    1 '#F46D43',\
-    2 '#FDAE61',\
-    3 '#FEE08B',\
-    4 '#E6F598',\
-    5 '#ABDDA4',\
-    6 '#66C2A5',\
-    7 '#3288BD' )
+set palette defined ( 0 "#000090",\
+                      1 "#000fff",\
+                      2 "#0090ff",\
+                      3 "#0fffee",\
+                      4 "#90ff70",\
+                      5 "#ffee00",\
+                      6 "#ff7000",\
+                      7 "#ee0000",\
+                      8 "#7f0000")
 '''
 
 for i_fl, line in enumerate(lines[-1:]):
@@ -84,19 +95,49 @@ for i_fl, line in enumerate(lines[-1:]):
 
     # Calculate distance matrix...
     dmat = pr.distance.calc_dmat(xyzs, xyzs)
+    pr.utils.fill_nan_with_zero(dmat)
+
+    # Set cutoff range...
+    dmin, dmax = 2.65, 3.0
+
+    # Find the indices of values that are within the range of (dmin, dmax)...
+    out_range_bool      = np.logical_or( dmin > dmat, dmat > dmax )
+
+    # Form a submatrix by selecting values within the range...
+    dmat[out_range_bool] = np.nan
 
     ## # Apply dmask...
     ## dmat *= dmask
+
+    ## # Manual intervention (trivial)...
+    ## fl_exclude = os.path.join(drc_dmat, f"{pdb}.{chain}.dmat.exclude.dat")
+    ## exclude_list = pr.utils.read_file(fl_exclude, numerical = True)
+    ## exclude_list = [ [int(x), int(y)] for x, y in exclude_list ]
+    ## for x, y in exclude_list: dmat[x,y] = np.nan
+
+    ## # Manual intervention (H bond)...
+    ## fl_exclude = os.path.join(drc_dmat, f"{pdb}.{chain}.dmat.exclude.nonHbond.dat")
+    ## exclude_list = pr.utils.read_file(fl_exclude, numerical = True)
+    ## exclude_list = [ [int(x), int(y)] for x, y in exclude_list ]
+    ## for x, y in exclude_list: dmat[x,y] = np.nan
+
+    # Put more resi labels...
+    diaglbl = {}
+    for resi in range(nterm, cterm, 1):
+        seqi = pr.fasta.resi_to_seqi(resi, super_seg, nterm)
+        diaglbl[resi] = [ seqi, seqi ]
 
     fl_dmat = os.path.join(drc_dmat, f"{pdb}.{chain}.dmat")
     plot_dmat(dmat, 
               fl_dmat, 
               lbl = labels_TM,
               lbl_fontsize = 18,
-              intst_min = 1.1,
-              intst_max = 1.3,
+              diaglbl = diaglbl,
+              diaglblfontsize = 3,
+              intst_min = dmin,
+              intst_max = dmax,
               palette = pal, 
               temp    = False,
               mode    = 'sparse',
-              showsparselabel = True,
+              showsparselabel = False,
               NaN = 0)
