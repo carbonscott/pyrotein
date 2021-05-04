@@ -478,7 +478,7 @@ def select_items(lines, col, offset = 0):
 
 def showHistogram(data, bin_cap, rng, title, cmds = []):
     # Find histogram...
-    data_val, data_rng = pr.utils.freq_density(data, bin_cap = bin_cap)
+    data_val, data_rng = pr.utils.population_density(data, bin_cap = bin_cap)
 
     gp = GnuplotPy3.GnuplotPy3()
     gp("set terminal postscript eps  size 3.5, 2.62 \\")
@@ -490,6 +490,7 @@ def showHistogram(data, bin_cap, rng, title, cmds = []):
     gp("unset key")
     gp("set xlabel 'Distance (\305)'")
     gp("set ylabel 'Population density (1/\305)'")
+    gp(f"set xrange [{rng[0]}:{rng[1]}]")
 
     for cmd in cmds:
         gp(cmd)
