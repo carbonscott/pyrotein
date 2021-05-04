@@ -36,8 +36,8 @@ label_list = pr.utils.label_dmat(super_seg, nterm, cterm)
 # [[[ ANALYZE SVD COMPONENTS ]]]
 # Specify the component...
 comp     = "u02"
-domain   = "neg"
-drc = "svd.full.u"
+domain   = "pos"
+drc = "svd.contact.u"
 fl_comp = os.path.join(drc, f"{comp}.dat")
 
 # Read the interesting dots in u plot...
@@ -55,38 +55,45 @@ for (x, y, d) in dist_list:
     pm_list.extend((int(resi1), int(resi2)))
     d_list.append((int(resi1), int(resi2), d))
 
-# Sort d_list by distance...
-d_list.sort( key = lambda x: x[2] )
-fl_d = f'locate.dist.{comp}.{domain}.dat'
-with open(fl_d,'w') as fh:
-    for x, y, d in d_list:
-        fh.write(f"{x:4d}  {y:4d}  {d:.4f}")
-        fh.write("\n")
-
-# Tally...
-tmin, tmax = 200, 10000
-pm_filter_list = filter( lambda x: tmin < x < tmax, pm_list )
-pm_tally_dict = pr.utils.tally_int(pm_filter_list)
+def filter_dist(d_list, dmin, dmax):
+    d_list_filter = [ (x, y) for x,y,v in d_list if dmin < v < dmax ]
+    d_set = set([ j for i in d_list_filter for j in i ])
+    return sorted(list(d_set))
 
 
-# Visualize the tally...
-gp = GnuplotPy3.GnuplotPy3()
-gp("set terminal postscript eps  size 3.5, 2.62 \\")
-gp("                             enhanced color \\")
-gp("                             font 'Helvetica,12' \\")
-gp("                             linewidth 1")
-gp(f"set output 'locate.tally.{comp}.{domain}.eps'")
-gp(f"set log y")
+if False:
+    # Sort d_list by distance...
+    d_list.sort( key = lambda x: x[2] )
+    fl_d = f'locate.dist.{comp}.{domain}.dat'
+    with open(fl_d,'w') as fh:
+        for x, y, d in d_list:
+            fh.write(f"{x:4d}  {y:4d}  {d:.4f}")
+            fh.write("\n")
 
-gp(f"plot \\")
-gp(f"'-' using 1:2 with points pointtype 6 linecolor rgb 'black' notitle, \\")
-gp(f"'-' using 1:2:3 with labels offset 2.0,0 font ',10' notitle, \\")
-gp(f"")
+    # Tally...
+    tmin, tmax = 0, 100000
+    pm_filter_list = filter( lambda x: tmin < x < tmax, pm_list )
+    pm_tally_dict = pr.utils.tally_int(pm_filter_list)
 
-for k, v in pm_tally_dict.items():
-    gp(f"{k} {v}")
-gp("e")
-for k, v in pm_tally_dict.items():
-    gp(f"{k} {v} {k}")
-gp("e")
-gp("exit")
+
+    # Visualize the tally...
+    gp = GnuplotPy3.GnuplotPy3()
+    gp("set terminal postscript eps  size 3.5, 2.62 \\")
+    gp("                             enhanced color \\")
+    gp("                             font 'Helvetica,12' \\")
+    gp("                             linewidth 1")
+    gp(f"set output 'locate.tally.{comp}.{domain}.eps'")
+    gp(f"set log y")
+
+    gp(f"plot \\")
+    gp(f"'-' using 1:2 with points pointtype 6 linecolor rgb 'black' notitle, \\")
+    gp(f"'-' using 1:2:3 with labels offset 1.0,0 font ',5' notitle, \\")
+    gp(f"")
+
+    for k, v in pm_tally_dict.items():
+        gp(f"{k} {v}")
+    gp("e")
+    for k, v in pm_tally_dict.items():
+        gp(f"{k} {v} {k}")
+    gp("e")
+    gp("exit")

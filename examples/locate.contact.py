@@ -40,7 +40,7 @@ label_list = pr.utils.label_dmat(super_seg, nterm, cterm)
 pdb = '6qno'
 chain = 'R'
 drc = "dmats.full"
-dmin, dmax = 2.65, 3.0
+dmin, dmax = 2.5, 5.0
 fl_u = os.path.join(drc, f"{pdb}.{chain}.dmat.dat")
 dist_list = pr.utils.read_file(f"{fl_u}", numerical = True)
 
@@ -61,7 +61,7 @@ for x,y,v in dist_pair:
     id_y, _, atm_y = y.split('.')
     atm_pair.append(f"{atm_x}-{atm_y}:{int(id_y) - int(id_x):1d}")
 
-tally_atm_pair = pr.utils.tally_int(atm_pair)
+tally_atm_pair = pr.utils.tally_list1d(atm_pair)
 tally_atm_pair_sorted = {k: v for k, v in sorted(tally_atm_pair.items(), key=lambda item: item[1], reverse = True)}
 
 def print_tally(tally_atm_pair_sorted, top = 5):
@@ -70,12 +70,12 @@ def print_tally(tally_atm_pair_sorted, top = 5):
         if i >= top: break
         print(f"{k:8s} => {v:6d}")
 
-print_tally(tally_atm_pair_sorted, top = 5)
+print_tally(tally_atm_pair_sorted, top = 10)
 
 
-def print_pair(dist_list, atm1, atm2):
+def print_pair(dist_list, atm1, atm2, diff = 1):
     for x,y,v in dist_pair:
         id_x, _, atm_x = x.split('.')
         id_y, _, atm_y = y.split('.')
-        if atm_x != atm1 or atm_y != atm2: continue
+        if atm_x != atm1 or atm_y != atm2 or int(id_y) - int(id_x) != diff: continue
         print(f"{x:14s} {y:14s}  {v:.4f}")
