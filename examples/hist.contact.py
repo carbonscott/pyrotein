@@ -50,8 +50,11 @@ if True:
     dmats = np.zeros((len(lines), len_lower_tri))
 
     # Create sparse mask...
-    dmask = pr.utils.sparse_mask(super_seg, offset = 0) * \
-            pr.utils.sparse_mask(super_seg, offset = 1, val = 0.0)
+    dmask = pr.utils.sparse_mask(super_seg, offset = 0, val = 0.0) * \
+            pr.utils.sparse_mask(super_seg, offset = 1, val = 0.0) * \
+            pr.utils.sparse_mask(super_seg, offset = 2, val = 0.0) * \
+            pr.utils.sparse_mask(super_seg, offset = 3, val = 0.0) * \
+            pr.utils.sparse_mask(super_seg, offset = 4, val = 0.0)
 
     # Process each entry...
     for i_fl, line in enumerate(lines[:]):

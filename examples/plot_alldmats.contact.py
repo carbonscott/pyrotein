@@ -32,8 +32,11 @@ nterm, cterm = 1, 322
 len_seg = cterm - nterm + 1
 super_seg = super_seq[nseqi : nseqi + len_seg]
 
-# Create a dmat mask...
-dmask = pr.utils.sparse_mask(super_seg)
+# Create sparse mask...
+dmask = pr.utils.sparse_mask(super_seg, offset = 0, val = np.nan) * \
+        pr.utils.sparse_mask(super_seg, offset = 1, val = np.nan) * \
+        pr.utils.sparse_mask(super_seg, offset = 2, val = np.nan)
+
 
 # [[[ ANALYZE PDB ENTRIES ]]]
 # Specify chains to process...
@@ -98,7 +101,7 @@ for i_fl, line in enumerate(lines[-1:]):
     pr.utils.fill_nan_with_zero(dmat)
 
     # Set cutoff range...
-    dmin, dmax = 2.65, 3.0
+    dmin, dmax = 2.5, 5.0
 
     # Find the indices of values that are within the range of (dmin, dmax)...
     out_range_bool      = np.logical_or( dmin > dmat, dmat > dmax )
@@ -106,20 +109,8 @@ for i_fl, line in enumerate(lines[-1:]):
     # Form a submatrix by selecting values within the range...
     dmat[out_range_bool] = np.nan
 
-    ## # Apply dmask...
-    ## dmat *= dmask
-
-    ## # Manual intervention (trivial)...
-    ## fl_exclude = os.path.join(drc_dmat, f"{pdb}.{chain}.dmat.exclude.dat")
-    ## exclude_list = pr.utils.read_file(fl_exclude, numerical = True)
-    ## exclude_list = [ [int(x), int(y)] for x, y in exclude_list ]
-    ## for x, y in exclude_list: dmat[x,y] = np.nan
-
-    ## # Manual intervention (H bond)...
-    ## fl_exclude = os.path.join(drc_dmat, f"{pdb}.{chain}.dmat.exclude.nonHbond.dat")
-    ## exclude_list = pr.utils.read_file(fl_exclude, numerical = True)
-    ## exclude_list = [ [int(x), int(y)] for x, y in exclude_list ]
-    ## for x, y in exclude_list: dmat[x,y] = np.nan
+    # Apply dmask...
+    dmat *= dmask
 
     # Put more resi labels...
     diaglbl = {}
