@@ -165,7 +165,7 @@ def get_key_by_max_value(obj_dict):
 
 
 
-def sparse_mask(super_seg):
+def sparse_mask(super_seg, offset = 1, val = 0.0):
     ''' A mask to remove trivial values from intra-residue distances in a
         sparse matrix.
     '''
@@ -182,18 +182,20 @@ def sparse_mask(super_seg):
     dmask[:] = 1
 
     # Assign zero to trivial values that only measure intra-residue distance...
-    pos_current = 0
-    for i in len_list:
-        dmask[ pos_current : pos_current + i, pos_current : pos_current + i ] = 0.0
-        pos_current += i
+    len_resi = len(len_list)
+    pos_x, pos_y = sum(len_list[ : offset]), 0
+    for i, j in zip(len_list[ : len_resi - offset], len_list[ offset :]):
+        dmask[ pos_x : pos_x + j, pos_y : pos_y + i ] = val
+        pos_x += j
+        pos_y += i
 
     return dmask
 
 
 
 
-def freq_density(data, bin_cap = 100):
-    ''' Return frequency density.
+def population_density(data, bin_cap = 100):
+    ''' Return population density.
     '''
     # Flatten data...
     data_flat = data.reshape(-1)
@@ -243,7 +245,7 @@ def label_dmat(super_seg, nterm, cterm):
 
 
 
-def tally_int(int_list):
+def tally_list1d(int_list):
     int_dict = {}
     for i in int_list:
         if not i in int_dict: int_dict[i] = 1
