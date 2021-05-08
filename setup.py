@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pyrotein",
-    version="0.1.3",
+    version="0.1.4",
     author="Cong Wang",
     author_email="wangimagine@gmail.com",
     description="A tiny package for structure analysis of macromolecules.",
