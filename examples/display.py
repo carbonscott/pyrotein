@@ -137,10 +137,17 @@ def plot_dmat(
     for cmd in cmds_top:
         gp(cmd)
 
-    gp(f"splot '-' using 1:2:3 with lines linewidth 1.0 linecolor rgb 'black' title 'Column mean'")
-    for i,v in enumerate(column_mean_dmat):
-        gp(f"{i} {v} 0")
-    gp("e")
+    if mode == "pm3d":
+        gp(f"splot '-' using 1:2:3 with lines linewidth {linewidth} linecolor rgb 'black' title 'Column mean'")
+        for i,v in enumerate(column_mean_dmat):
+            gp(f"{i} {v} 0")
+        gp("e")
+    else:
+        gp(f"plot '-' using 1:2 with lines linewidth {linewidth} linecolor rgb 'black' title 'Column mean'")
+        for i,v in enumerate(column_mean_dmat):
+            gp(f"{i} {v}")
+        gp("e")
+
 
 
     # PLOT 2: distance matrix...
@@ -187,7 +194,7 @@ def plot_dmat(
 
     if mode == 'sparse':
         gp("plot \\")
-        gp(f"'{fl_temp}' using 1:2:3 with points pointtype 6 pointsize 0.5 linewidth 0.5 linecolor palette, \\")
+        gp(f"'{fl_temp}' using 1:2:3 with points pointtype 6 pointsize 0.5 linewidth {linewidth} linecolor palette, \\")
         if showsparselabel:
             gp(f"'{fl_temp}' using 1:2:(sprintf('%d,%d', int($1), int($2))) with labels offset 0.5,.3 rotate by 45 font ',3', \\")
         gp("")
@@ -336,7 +343,7 @@ def plot_left_singular(u, rank, length_mat,
 
 
 
-def plot_coeff(c, rank1, rank2, plot_dict = {},
+def plot_coeff(c, rank1, rank2, lbl = {},
                                 label = True,
                                 labeltext = [],
                                 xrange = ("*", "*"),
@@ -361,12 +368,13 @@ def plot_coeff(c, rank1, rank2, plot_dict = {},
     assert rank1_in_data >= 0, "Wrong value for rank1 (base-0 or base-1, is the input index correct?)"
     assert rank2_in_data >= 0, "Wrong value for rank2 (base-0 or base-1, is the input index correct?)"
 
-    if len(plot_dict): 
+    if len(lbl): 
         gp = GnuplotPy3.GnuplotPy3()
         gp(f"set terminal postscript eps  size {width}, {height} \\")
         gp( "                             enhanced color \\")
         gp(f"                             font 'Helvetica,{fontsize}' \\")
         gp(f"                             linewidth {linewidth}")
+        gp(f"set encoding utf8")
 
         # Declare the filename to export...
         fl_name = f"coeff_{rank1:02d}vs{rank2:02d}" + fl_postfix
@@ -397,7 +405,7 @@ def plot_coeff(c, rank1, rank2, plot_dict = {},
 
         # Plot style...
         gp("plot \\")
-        for k, v in plot_dict.items(): gp(" '-' " + v["style"] + ", \\")
+        for k, v in lbl.items(): gp(" '-' " + v["style"] + ", \\")
 
         # Label each dot
         if label: gp(f" '-' using 1:2:3:4 with labels rotate variable offset char {offset} font ',{lbl_fontsize}', \\")
@@ -406,7 +414,7 @@ def plot_coeff(c, rank1, rank2, plot_dict = {},
         gp("")
 
         # Plot entry...
-        for k, v in plot_dict.items():
+        for k, v in lbl.items():
             for i in v["entry"]:
                 gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]}")
             gp("e")
@@ -436,6 +444,7 @@ def plot_blankcoeff(rank1, width, height, fl_path, fl_postfix, index_from_zero =
     gp( "                             enhanced color \\")
     gp(f"                             font 'Helvetica,14' \\")
     gp(f"                             linewidth 2")
+    gp("set encoding utf8")
 
     # Declare the filename to export...
     fl_name = f"coeff_{rank1:02d}vs{rank1:02d}" + fl_postfix
