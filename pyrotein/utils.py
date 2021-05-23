@@ -165,7 +165,7 @@ def get_key_by_max_value(obj_dict):
 
 
 
-def sparse_mask(super_seg, offset = 1, val = 0.0):
+def sparse_mask(super_seg, offset = 1, val_offset = 0.0, val_init = 1.0):
     ''' A mask to remove trivial values from intra-residue distances in a
         sparse matrix.
     '''
@@ -179,13 +179,13 @@ def sparse_mask(super_seg, offset = 1, val = 0.0):
 
     # Form a placeholder matrix with value one by default...
     dmask = np.zeros( (len_dmat, len_dmat))
-    dmask[:] = 1
+    dmask[:] = val_init
 
     # Assign zero to trivial values that only measure intra-residue distance...
     len_resi = len(len_list)
     pos_x, pos_y = sum(len_list[ : offset]), 0
     for i, j in zip(len_list[ : len_resi - offset], len_list[ offset :]):
-        dmask[ pos_x : pos_x + j, pos_y : pos_y + i ] = val
+        dmask[ pos_x : pos_x + j, pos_y : pos_y + i ] = val_offset
         pos_x += j
         pos_y += i
 
