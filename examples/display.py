@@ -194,7 +194,7 @@ def plot_dmat(
 
     if mode == 'sparse':
         gp("plot \\")
-        gp(f"'{fl_temp}' using 1:2:3 with points pointtype 6 pointsize 0.5 linewidth {linewidth} linecolor palette, \\")
+        gp(f"'{fl_temp}' using 1:2:3 with points pointtype 6 pointsize 0.5 linewidth 0.0 linecolor palette, \\")
         if showsparselabel:
             gp(f"'{fl_temp}' using 1:2:(sprintf('%d,%d', int($1), int($2))) with labels offset 0.5,.3 rotate by 45 font ',3', \\")
         gp("")
@@ -346,6 +346,7 @@ def plot_left_singular(u, rank, length_mat,
 def plot_coeff(c, rank1, rank2, lbl = {},
                                 label = True,
                                 labeltext = [],
+                                join_dict = {},
                                 xrange = ("*", "*"),
                                 yrange = ("*", "*"),
                                 offset = '2.0,0.0',
@@ -410,6 +411,9 @@ def plot_coeff(c, rank1, rank2, lbl = {},
         # Label each dot
         if label: gp(f" '-' using 1:2:3:4 with labels rotate variable offset char {offset} font ',{lbl_fontsize}', \\")
 
+        # Join dots???
+        if bool(join_dict): gp(" '-' using 1:2 with lines linewidth 1.0 linecolor rgb 'gray', \\")
+
         # End plot style
         gp("")
 
@@ -423,6 +427,14 @@ def plot_coeff(c, rank1, rank2, lbl = {},
             # Label each dot that is colored only (even thought it's selected from metadata)
             for i, point_label in enumerate(labeltext):
                 gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]} {point_label} {rot}")  
+            gp("e")
+
+        if bool(join_dict):
+            for k, v in join_dict.items():
+                if len(v) != 2: continue
+                for i in v:
+                    gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]}")  
+                gp("")
             gp("e")
 
         gp("exit")
