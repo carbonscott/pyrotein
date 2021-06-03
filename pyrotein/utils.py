@@ -196,6 +196,7 @@ def sparse_mask(super_seg, offset = 1, val_offset = 0.0, val_init = 1.0):
 
 def population_density(data, bin_cap = 100):
     ''' Return population density.
+        bin_cap stands for bin capacity (number of items per bin).
     '''
     # Flatten data...
     data_flat = data.reshape(-1)
@@ -217,10 +218,55 @@ def population_density(data, bin_cap = 100):
         den      = bin_step / (e - b)
         bin_val.append(den)
         bin_edge.append(b)
-        ## bin_edge.append([b, e])
     bin_edge.append( data_sort[-1] )
 
     return bin_val, bin_edge
+
+
+
+
+def show_population_density(data, bin_cap, filename, 
+                            rng       = [], 
+                            width     = 3.5, 
+                            height    = 2.62, 
+                            fontsize  = 14, 
+                            linewidth = 1.5,
+                            xlabel    = 'Distance (\305)',
+                            ylabel    = 'Population density (1/\305)',
+                            linecolor = 'black',
+                            cmds      = [],):
+    data_val, data_rng = population_density(data, bin_cap = bin_cap)
+
+    if len(rng) == 0: rng = data_rng[0], data_rng[-1]
+
+    import GnuplotPy3
+    gp = GnuplotPy3.GnuplotPy3()
+    gp(f"set terminal postscript eps  size {width}, {height} \\")
+    gp(f"                             enhanced color \\")
+    gp(f"                             font 'Helvetica,{fontsize}' \\")
+    gp(f"                             linewidth {linewidth}")
+    gp(f"set output '{filename}.eps'")
+    gp(f"set encoding utf8")
+    gp(f"unset key")
+    gp(f"set xlabel '{xlabel}'")
+    gp(f"set ylabel '{ylabel}'")
+    gp(f"set xrange [{rng[0]}:{rng[1]}]")
+
+    for cmd in cmds:
+        gp(cmd)
+
+    gp("plot '-' using 1:2 with lines linewidth 1 linecolor rgb 'black'")
+
+    for i in range(len(data_val)): 
+        if data_rng[i] < rng[0]: continue
+        if data_rng[i+1] > rng[1]: continue
+        gp(f"{data_rng[i]} {data_val[i]}")  
+        gp(f"{data_rng[i+1]} {data_val[i]}")  
+    gp("e")
+
+    gp("exit")
+
+    return None
 
 
 
