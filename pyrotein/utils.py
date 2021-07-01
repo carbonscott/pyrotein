@@ -37,7 +37,9 @@ def bin_image(img_orig, binning = 4, mode = 1, nan_replace = 0):
     return np.array(img_bin)
 
 
-def read_file(file, numerical = False):
+
+
+def read_file(file, numerical = False, labelcolumn = -1):
     '''Return all lines in the user supplied parameter file without comments.
     '''
     lines = []
@@ -50,7 +52,8 @@ def read_file(file, numerical = False):
             if "#" in words: words = words[  : words.index("#")]
 
             # Save non-empty line...
-            if numerical: words = [ float(word) for word in words ]
+            if numerical: 
+                words[labelcolumn + 1:] = [ float(word) for word in words[labelcolumn + 1:] ]
             if len(words) > 0: lines.append(words)
 
     return lines
