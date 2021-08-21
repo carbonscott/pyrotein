@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from .utils import get_key_by_max_value
-from .atom  import constant_atomlabel, constant_aminoacid_code
+from .constants  import constant_atomlabel, constant_aminoacid_code
 
 
 def read(fl_fasta):
@@ -160,6 +160,40 @@ def get_rseqi(seq):
     ''' Return the rightmost sequence index corresponds to first non-null ('-') resn.
     '''
     return seq.rfind( strip_null(seq)[-1] )
+
+
+
+
+def seqi_to_resi(chain_dict, nterm, seq_dict, nseqi, cseqi):
+    ''' Map seq_dict index to chain_dict resi.  
+        Coordinates in chain_dict are extracted according to
+        - nterm: the starting point
+
+        chain_dict = atom_dict[chain]
+    '''
+    # Obtain seq string for the current chain...
+    seqstr = seq_dict[nseqi : cseqi + 1]
+
+    # Go through the super (consensus) sequence...
+    res_counter = 0
+    resi_list   = list(chain_dict.keys())
+    resi_list   = [ i for i in resi_list if not i < nterm ]
+    seq_to_resi_dict = {}
+    for i, seqi in enumerate(range(nseqi, cseqi + 1)):
+        # Skip the '-' residue...
+        if seqstr[i] == '-': continue
+
+        # Obtain the current available resi...
+        resi = resi_list[res_counter]
+
+        # Record the mapping...
+        seq_to_resi_dict[seqi] = resi
+        ## seq_to_resi_dict[i] = resi
+
+        # Increment the residue counter...
+        res_counter += 1
+
+    return seq_to_resi_dict
 
 
 

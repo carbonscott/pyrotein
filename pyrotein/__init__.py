@@ -9,6 +9,7 @@ __all__ = [
             "utils",
             "fasta",
             "misc",
+            "constants",
           ]
 
 version = "0.1.4"

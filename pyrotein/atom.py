@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from .constants  import constant_atomlabel, constant_aminoacid_code
+from .fasta import seqi_to_resi
 
 ''' The program extracts atomic information from a truncated pdb file that is
     exported from PyMol after a selection statement is executed, and thus has a
@@ -95,54 +97,6 @@ def spec():
 
 
 
-def constant_aminoacid_code():
-    aa_dict = {
-        "R" : "ARG", "H" : "HIS", "K" : "LYS", "D" : "ASP", "E" : "GLU",
-        "S" : "SER", "T" : "THR", "N" : "ASN", "Q" : "GLN", "C" : "CYS",
-        "G" : "GLY", "P" : "PRO", "A" : "ALA", "V" : "VAL", "I" : "ILE",
-        "L" : "LEU", "M" : "MET", "F" : "PHE", "Y" : "TYR", "W" : "TRP",
-
-        "-" : "MAR"
-    }
-
-    return aa_dict
-
-
-
-
-def constant_atomlabel():
-    # MAR stands for missing-a-residue;
-    # We consider MAR still has 4 placeholder atoms that form a backbone
-    label_dict = {
-        "ARG" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD', 'NE', 'CZ', 'NH1', 'NH2'],
-        "HIS" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'ND1', 'CD2', 'CE1', 'NE2'],
-        "LYS" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD', 'CE', 'NZ'],
-        "ASP" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'OD1', 'OD2'],
-        "GLU" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD', 'OE1', 'OE2'],
-        "SER" : ['N', 'CA', 'C', 'O', 'CB', 'OG'],
-        "THR" : ['N', 'CA', 'C', 'O', 'CB', 'OG1', 'CG2'],
-        "ASN" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'OD1', 'ND2'],
-        "GLN" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD', 'OE1', 'NE2'],
-        "CYS" : ['N', 'CA', 'C', 'O', 'CB', 'SG'],
-        "GLY" : ['N', 'CA', 'C', 'O'],
-        "PRO" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD'],
-        "ALA" : ['N', 'CA', 'C', 'O', 'CB'],
-        "VAL" : ['N', 'CA', 'C', 'O', 'CB', 'CG1', 'CG2'],
-        "ILE" : ['N', 'CA', 'C', 'O', 'CB', 'CG1', 'CG2', 'CD1'],
-        "LEU" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD1', 'CD2'],
-        "MET" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'SD', 'CE'],
-        "PHE" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ'],
-        "TYR" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD1', 'CD2', 'CE1', 'CE2', 'CZ', 'OH'],
-        "TRP" : ['N', 'CA', 'C', 'O', 'CB', 'CG', 'CD1', 'CD2', 'NE1', 'CE2', 'CE3', 'CZ2', 'CZ3', 'CH2'],
-
-        "MAR" : ['N', 'CA', 'C', 'O'],
-    }
-
-    return label_dict
-
-
-
-
 def create_lookup_table(atoms_pdb):
     ''' Create a lookup table to access atomic coordinates.  
 
@@ -175,78 +129,84 @@ def create_lookup_table(atoms_pdb):
 
 # [[[ Dictionary based methods ]]]
 
-def filter_by_resi(atom_dict, chain, nterm, cterm):
+def filter_by_resi(chain_dict, nterm, cterm):
     ''' Filter out a subset of an amino acid chain in a range specified by two
         numbers.  
+
+        Use chain_dict = atom_dict[chain] prior to use this function.  
     '''
-    return { k : v for k, v in atom_dict[chain].items() if nterm <= k <= cterm }
+    return { k : v for k, v in chain_dict.items() if nterm <= k <= cterm }
 
 
 
 
-def filter_by_resn(atom_dict, chain, resn):
+def filter_by_resn(chain_dict, resn):
     ''' Filter out a subset of an amino acid chain by the residue name
         specified in `resn`.  
+
+        Use chain_dict = atom_dict[chain] prior to use this function.  
     '''
-    return { k : v for k, v in atom_dict[chain].items() if "CA" in v and v["CA"][4] == resn }
+    return { k : v for k, v in chain_dict.items() if "CA" in v and v["CA"][4] == resn }
 
 
 
 
-def seq_to_resi(chain_dict, seqstr, nterm):
-    ''' Map seq index to resi.  
-        Coordinates in chain_dict are extracted according to
-        - nterm: the starting point
-        - seqstr: the aligned string by multiple sequence alignment (MSA)
-    '''
-    # Obtain size of the seqstr...
-    len_seqstr = len(seqstr)
+## def seqi_to_resi(chain_dict, seq_dict, nterm, nseqi, cseqi):
+##     ''' Map seq_dict index to chain_dict resi.  
+##         Coordinates in chain_dict are extracted according to
+##         - nterm: the starting point
+## 
+##         chain_dict = atom_dict[chain]
+##     '''
+##     # Obtain seq string for the current chain...
+##     seqstr = seq_dict[nseqi : cseqi + 1]
+## 
+##     # Go through the super (consensus) sequence...
+##     res_counter = 0
+##     resi_list   = list(chain_dict.keys())
+##     resi_list   = [ i for i in resi_list if not i < nterm ]
+##     seq_to_resi_dict = {}
+##     for i, seqi in enumerate(range(nseqi, cseqi + 1)):
+##         # Skip the '-' residue...
+##         if seqstr[i] == '-': continue
+## 
+##         # Obtain the current available resi...
+##         resi = resi_list[res_counter]
+## 
+##         # Record the mapping...
+##         seq_to_resi_dict[seqi] = resi
+##         ## seq_to_resi_dict[i] = resi
+## 
+##         # Increment the residue counter...
+##         res_counter += 1
+## 
+##     return seq_to_resi_dict
 
-    # Go through the super (consensus) sequence...
-    res_counter = 0
-    resi_list   = list(chain_dict.keys())
-    resi_list   = [ i for i in resi_list if not i < nterm ]
-    seq_to_resi_dict = {}
-    for i in range(len_seqstr):
-        # Skip the '-' residue...
-        if seqstr[i] == '-': continue
-
-        # Obtain the current available resi...
-        resi = resi_list[res_counter]
-
-        # Record the mapping...
-        seq_to_resi_dict[i] = resi
-
-        # Increment the residue counter...
-        res_counter += 1
-
-    return seq_to_resi_dict
 
 
 
-
-def extract_xyz_by_seq(atoms_to_extract, chain_dict, seqstr, nterm):
+def extract_xyz_by_seq(atoms_to_extract, chain_dict, nterm, seq_dict, nseqi, cseqi):
     ''' Use super_seq as framework to extract coordinates.
         Coordinates in chain_dict are extracted according to
         - nterm: the starting point
         - seqstr: the aligned string by multiple sequence alignment (MSA)
     '''
     # Obtain the seq to resi mapping...
-    seq_to_resi_dict = seq_to_resi(chain_dict, seqstr, nterm)
+    seqi_to_resi_dict = seqi_to_resi(chain_dict, nterm, seq_dict, nseqi, cseqi)
 
     # Obtain size of the seqstr...
-    len_seqstr = len(seqstr)
+    len_chain = cseqi - nseqi + 1
 
     # Obtain chain info...
     len_res = len(atoms_to_extract)
-    len_seq = len_seqstr * len_res
+    len_seq = len_chain * len_res
 
     # Preallocate memory for storing coordinates...
     xyzs    = np.zeros((len_seq, 3))    # Initialize coordinate matrix
     xyzs[:] = np.nan                    # np.nan for any missing residue
 
     # Go through each seqi...
-    for i, resi in seq_to_resi_dict.items():
+    for i, (seqi, resi) in enumerate(seqi_to_resi_dict.items()):
         # From each atom
         for j, atm in enumerate(atoms_to_extract):
             # Derive the matrix index...
@@ -263,62 +223,14 @@ def extract_xyz_by_seq(atoms_to_extract, chain_dict, seqstr, nterm):
 
 
 
-## def extract_xyz_by_seqi(atoms_to_extract, chain_dict, seqstr, nterm):
-##     ''' Use super_seq as framework to extract coordinates.
-##         Coordinates in chain_dict are extracted according to
-##         - nterm: the starting point
-##         - seqstr: the aligned string by multiple sequence alignment (MSA)
-##     '''
-##     # Obtain size of the seqstr...
-##     len_seqstr = len(seqstr)
-## 
-##     # Obtain chain info...
-##     len_res = len(atoms_to_extract)
-##     len_seq = len_seqstr * len_res
-## 
-##     # Preallocate memory for storing coordinates...
-##     xyzs    = np.zeros((len_seq, 3))    # Initialize coordinate matrix
-##     xyzs[:] = np.nan                    # np.nan for any missing residue
-## 
-##     # Go through the super (consensus) sequence...
-##     res_counter = 0
-##     resi_list   = list(chain_dict.keys())
-##     resi_list   = [ i for i in resi_list if not i < nterm ]
-##     for i in range(len_seqstr):
-##         # Skip the '-' residue...
-##         if seqstr[i] == '-': continue
-## 
-##         # Obtain the current available resi...
-##         resi = resi_list[res_counter]
-## 
-##         # From each atom
-##         for j, atm in enumerate(atoms_to_extract):
-##             # Derive the matrix index...
-##             mat_i = i * len_res + j
-## 
-##             # Assign coordinates to matrix at index mat_i...
-##             if resi in chain_dict:
-##                 if atm in chain_dict[resi]:
-##                     # 8:8+3 => x,y,z
-##                     xyzs[mat_i] = chain_dict[resi][atm][8:8+3]
-## 
-##         # Increment the residue counter...
-##         res_counter += 1
-## 
-##     return xyzs
-
-
-
-
-def extract_xyz_by_atom(atoms_to_extract, atom_dict, chain, nterm, cterm):
+def extract_xyz_by_atom(atoms_to_extract, chain_dict, nterm, cterm):
     ''' Extract atomic coordinates of interest (specified in the first
         argument) in the lookup table format.  
 
         if atoms_to_extract is empty `[]`, then it is derived from the resn.  
-    '''
-    # Just a shortcut var name
-    chain_dict = atom_dict[chain]
 
+        Use chain_dict = atom_dict[chain] prior to use this function.  
+    '''
     # Define atoms used for distance matrix analysis...
     len_backbone = (cterm - nterm + 1) * len(atoms_to_extract)
 
@@ -344,7 +256,7 @@ def extract_xyz_by_atom(atoms_to_extract, atom_dict, chain, nterm, cterm):
 
 
 
-def extract_xyz_with_sidechain(tar_seq, super_seq, atom_dict, chain, nterm, cterm):
+def extract_xyz_with_sidechain(tar_seq, super_seq, chain_dict, nterm, cterm):
     ''' Extract xyzs from a protein chain, whose sequecne is tar_seq.  Two
         sequecnes are considered in this function.  super_seq is used to 
         distinguish three scenarios about how to extract xyzs.  
@@ -357,13 +269,12 @@ def extract_xyz_with_sidechain(tar_seq, super_seq, atom_dict, chain, nterm, cter
         chain atoms (N, CA, C, O) if they exit.  
 
         In the missing scenario, no xyz is extracted from tar_seq.
+
+        Use chain_dict = atom_dict[chain] prior to use this function.  
     '''
     # Import label_dict and aa_dict...
     label_dict = constant_atomlabel()
     aa_dict    = constant_aminoacid_code()
-
-    # Just a shortcut var name
-    chain_dict = atom_dict[chain]
 
     # Count atoms used for distance matrix analysis based on super_seq...
     len_xyzs = np.sum( [ len(label_dict[aa_dict[i]]) for i in super_seq ] )

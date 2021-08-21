@@ -78,6 +78,7 @@ atom_dict = pr.atom.create_lookup_table(atoms_pdb)
 atom_dict["A"][1002]["CA"]
 ```
 
+<!--
 #### Select a segment by range
 
 The following example demos how to select a segment of protein that represents
@@ -93,6 +94,8 @@ nterm = 1
 cterm = 348
 rho_dict = pr.atom.extract_segment(atom_dict, chain, nterm, cterm)
 ```
+-->
+
 
 ## Establish metadata table
 
@@ -131,7 +134,7 @@ lines    = load_xlsx(fl_chain)
 drc      = "pdb"
 
 # Define atoms used for distance matrix analysis...
-peptide = ["N", "CA", "C", "O"]
+backbone = ["N", "CA", "C", "O"]
 
 # Specify the range of atoms from adrenoceptor...
 nterm = 1
@@ -141,7 +144,7 @@ cterm = 322
 len_segments = [ 0,
                  cterm - nterm + 1,
                ]
-len_peptide = np.sum(len_segments) * len(peptide)
+len_peptide = np.sum(len_segments) * len(backbone)
 
 drc_dmat = "dmats"
 pal = "set palette defined ( 0 '#F6FF9E', 0 'white', 0.5 'blue', 1 'navy' )"
@@ -158,8 +161,11 @@ for i_fl, line in enumerate(lines[-1]):
     # Create a lookup table for this pdb...
     atom_dict = pr.atom.create_lookup_table(atoms_pdb)
 
+    # Obtain the chain to process...
+    chain_dict = atom_dict[chain]
+
     # Obtain coordinates...
-    xyzs = pr.atom.extract_xyz_by_atom(peptide, atom_dict, chain, nterm, cterm)
+    xyzs = pr.atom.extract_xyz_by_atom(backbone, chain_dict, nterm, cterm)
 
     # Calculate distance matrix...
     dmat = pr.distance.calc_dmat(xyzs, xyzs)
@@ -229,6 +235,9 @@ for i_fl, line in enumerate(lines[-1:]):
     # Create a lookup table for this pdb...
     atom_dict = pr.atom.create_lookup_table(atoms_pdb)
 
+    # Obtain the chain to process...
+    chain_dict = atom_dict[chain]
+
     # Obtain the target protein by range...
     tar_seq = seq_dict[f"{pdb}_{chain}"]
     tar_seg = tar_seq[nseqi : nseqi + len_seg]
@@ -237,7 +246,7 @@ for i_fl, line in enumerate(lines[-1:]):
     pr.atom.standardize_sidechain(atom_dict)
 
     # Obtain coordinates...
-    xyzs = pr.atom.extract_xyz_by_seq(tar_seg, super_seg, atom_dict, chain, nterm, cterm)
+    xyzs = pr.atom.extract_xyz_by_atom(tar_seg, super_seg, chain_dict, nterm, cterm)
 
     # Calculate distance matrix...
     dmat = pr.distance.calc_dmat(xyzs, xyzs)
@@ -419,9 +428,6 @@ The warning `RuntimeWarning: Mean of empty slice` is triggered by `np.nanmean`
 when the input array has nothing but `np.nan` values.  
 
 If RMSD analysis gives very smeared intensities, you need to check sequence
-similarities among the input sequences.  If there is difference, how different
-are they?  In groups or just a few outliers.  
-
-I have naively developed some tools that fail to perform joint-analysis on
-entries with drastically different sequences.  I will give it a second thought
-(using point cloud???) but not yet.  
+similarities.  How different are they?  In groups or just a few outliers.  
+Does the sequence alignment make sense? (It doesn't do a good job for a minority
+of entries that have a long insertion.)  
