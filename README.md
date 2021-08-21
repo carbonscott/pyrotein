@@ -417,3 +417,11 @@ distance matrix.  Two visualization choices are provided via `Gnuplot` and
 
 The warning `RuntimeWarning: Mean of empty slice` is triggered by `np.nanmean`
 when the input array has nothing but `np.nan` values.  
+
+If RMSD analysis gives very smeared intensities, you need to check sequence
+similarities among the input sequences.  If there is difference, how different
+are they?  In groups or just a few outliers.  
+
+I have naively developed some tools that fail to perform joint-analysis on
+entries with drastically different sequences.  I will give it a second thought
+(using point cloud???) but not yet.  
