@@ -342,6 +342,9 @@ for i_fl, line in enumerate(lines):
     # Create a lookup table for this pdb...
     atom_dict = pr.atom.create_lookup_table(atoms_pdb)
 
+    # Obtain the chain to process...
+    chain_dict = atom_dict[chain]
+
     # Obtain the target protein by range...
     tar_seq = seq_dict[f"{pdb}_{chain}"]
     tar_seg = tar_seq[nseqi : nseqi + len_seg]
@@ -350,7 +353,7 @@ for i_fl, line in enumerate(lines):
     pr.atom.standardize_sidechain(atom_dict)
 
     # Obtain coordinates...
-    xyzs = pr.atom.extract_xyz_by_seq(tar_seg, super_seg, atom_dict, chain, nterm, cterm)
+    xyzs = pr.atom.extract_xyz_by_seq(tar_seg, super_seg, chain_dict, nterm, cterm)
 
     # Calculate distance matrix...
     dmat = pr.distance.calc_dmat(xyzs, xyzs)
