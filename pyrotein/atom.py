@@ -193,6 +193,123 @@ def filter_by_resn(atom_dict, chain, resn):
 
 
 
+def seq_to_resi(chain_dict, seqstr, nterm):
+    ''' Map seq index to resi.  
+        Coordinates in chain_dict are extracted according to
+        - nterm: the starting point
+        - seqstr: the aligned string by multiple sequence alignment (MSA)
+    '''
+    # Obtain size of the seqstr...
+    len_seqstr = len(seqstr)
+
+    # Go through the super (consensus) sequence...
+    res_counter = 0
+    resi_list   = list(chain_dict.keys())
+    resi_list   = [ i for i in resi_list if not i < nterm ]
+    seq_to_resi_dict = {}
+    for i in range(len_seqstr):
+        # Skip the '-' residue...
+        if seqstr[i] == '-': continue
+
+        # Obtain the current available resi...
+        resi = resi_list[res_counter]
+
+        # Record the mapping...
+        seq_to_resi_dict[i] = resi
+
+        # Increment the residue counter...
+        res_counter += 1
+
+    return seq_to_resi_dict
+
+
+
+
+def extract_xyz_by_seq(atoms_to_extract, chain_dict, seqstr, nterm):
+    ''' Use super_seq as framework to extract coordinates.
+        Coordinates in chain_dict are extracted according to
+        - nterm: the starting point
+        - seqstr: the aligned string by multiple sequence alignment (MSA)
+    '''
+    # Obtain the seq to resi mapping...
+    seq_to_resi_dict = seq_to_resi(chain_dict, seqstr, nterm)
+
+    # Obtain size of the seqstr...
+    len_seqstr = len(seqstr)
+
+    # Obtain chain info...
+    len_res = len(atoms_to_extract)
+    len_seq = len_seqstr * len_res
+
+    # Preallocate memory for storing coordinates...
+    xyzs    = np.zeros((len_seq, 3))    # Initialize coordinate matrix
+    xyzs[:] = np.nan                    # np.nan for any missing residue
+
+    # Go through each seqi...
+    for i, resi in seq_to_resi_dict.items():
+        # From each atom
+        for j, atm in enumerate(atoms_to_extract):
+            # Derive the matrix index...
+            mat_i = i * len_res + j
+
+            # Assign coordinates to matrix at index mat_i...
+            if resi in chain_dict:
+                if atm in chain_dict[resi]:
+                    # 8:8+3 => x,y,z
+                    xyzs[mat_i] = chain_dict[resi][atm][8:8+3]
+
+    return xyzs
+
+
+
+
+## def extract_xyz_by_seqi(atoms_to_extract, chain_dict, seqstr, nterm):
+##     ''' Use super_seq as framework to extract coordinates.
+##         Coordinates in chain_dict are extracted according to
+##         - nterm: the starting point
+##         - seqstr: the aligned string by multiple sequence alignment (MSA)
+##     '''
+##     # Obtain size of the seqstr...
+##     len_seqstr = len(seqstr)
+## 
+##     # Obtain chain info...
+##     len_res = len(atoms_to_extract)
+##     len_seq = len_seqstr * len_res
+## 
+##     # Preallocate memory for storing coordinates...
+##     xyzs    = np.zeros((len_seq, 3))    # Initialize coordinate matrix
+##     xyzs[:] = np.nan                    # np.nan for any missing residue
+## 
+##     # Go through the super (consensus) sequence...
+##     res_counter = 0
+##     resi_list   = list(chain_dict.keys())
+##     resi_list   = [ i for i in resi_list if not i < nterm ]
+##     for i in range(len_seqstr):
+##         # Skip the '-' residue...
+##         if seqstr[i] == '-': continue
+## 
+##         # Obtain the current available resi...
+##         resi = resi_list[res_counter]
+## 
+##         # From each atom
+##         for j, atm in enumerate(atoms_to_extract):
+##             # Derive the matrix index...
+##             mat_i = i * len_res + j
+## 
+##             # Assign coordinates to matrix at index mat_i...
+##             if resi in chain_dict:
+##                 if atm in chain_dict[resi]:
+##                     # 8:8+3 => x,y,z
+##                     xyzs[mat_i] = chain_dict[resi][atm][8:8+3]
+## 
+##         # Increment the residue counter...
+##         res_counter += 1
+## 
+##     return xyzs
+
+
+
+
 def extract_xyz_by_atom(atoms_to_extract, atom_dict, chain, nterm, cterm):
     ''' Extract atomic coordinates of interest (specified in the first
         argument) in the lookup table format.  
@@ -227,7 +344,7 @@ def extract_xyz_by_atom(atoms_to_extract, atom_dict, chain, nterm, cterm):
 
 
 
-def extract_xyz_by_seq(tar_seq, super_seq, atom_dict, chain, nterm, cterm):
+def extract_xyz_with_sidechain(tar_seq, super_seq, atom_dict, chain, nterm, cterm):
     ''' Extract xyzs from a protein chain, whose sequecne is tar_seq.  Two
         sequecnes are considered in this function.  super_seq is used to 
         distinguish three scenarios about how to extract xyzs.  
