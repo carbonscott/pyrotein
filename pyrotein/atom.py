@@ -2,9 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from math import inf
 from .constants  import constant_atomlabel, constant_aminoacid_code
-from .fasta import seqi_to_resi
 
 ''' The program extracts atomic information from a truncated pdb file that is
     exported from PyMol after a selection statement is executed, and thus has a
@@ -102,11 +100,11 @@ def create_lookup_table(atoms_pdb):
     ''' Create a lookup table to access atomic coordinates.  
 
         ```
-        atom_dict =  create_lookup_table(atoms_pdb)
-        atom_dict["A"][1002]["CA"]
+        chain_dict =  create_lookup_table(atoms_pdb)
+        chain_dict["A"][1002]["CA"]
         ```
     '''
-    atom_dict = {}
+    chain_dict = {}
     for a in atoms_pdb:
         # Decouple parameters...
         resi  = a[6]
@@ -114,16 +112,16 @@ def create_lookup_table(atoms_pdb):
         chain = a[5]
 
         # Initialize by chain...
-        if not chain in atom_dict: atom_dict[chain] = {}
+        if not chain in chain_dict: chain_dict[chain] = {}
 
         # Initialize by resi for a chain... 
-        if not resi  in atom_dict[chain]: atom_dict[chain][resi] = {}
+        if not resi  in chain_dict[chain]: chain_dict[chain][resi] = {}
 
         # Store by exclusive atom name...
         # Atom names are not allowed to have duplicate items
-        atom_dict[chain][resi][name] = a
+        chain_dict[chain][resi][name] = a
 
-    return atom_dict
+    return chain_dict
 
 
 
@@ -152,14 +150,97 @@ def filter_by_resn(chain_dict, resn):
 
 
 
-def extract_xyz_by_seq(entry, atoms_to_extract, chain_dict, tar_seq, nseqi, cseqi, nterm, cterm):
+def sort_dict_by_key(_dict):
+    ''' PDB doesn't sort resn by resi by default.  This function sorts resn by 
+        resi in an ascending order.  
+    '''
+    return { k : v for k, v in sorted(_dict.items(), key = lambda x : x[0]) }
+
+
+
+
+def resn_to_resi(chain_dict):
+    ''' Extract resn to resi mapping (like the sequence viewer on PyMol)
+    '''
+    aa_dict = { v : k for k, v in constant_aminoacid_code().items() }
+
+    resn_to_resi_dict = {}
+    for resi, atom_dict in chain_dict.items():
+        atom_first = list(atom_dict.keys())[0]
+        resn = atom_dict[atom_first][4]
+
+        if not resn in aa_dict: continue
+        resn_to_resi_dict[resi] = aa_dict[resn]
+
+    resn_to_resi_dict = sort_dict_by_key(resn_to_resi_dict)
+    return resn_to_resi_dict
+
+
+
+
+def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
+    ''' Map seqi to resi for the sequence tar_seq bound by nseqi and cseqi.
+
+        resi is infered by resn_to_resi_dict.  
+
+        Key step is to recognize the lower bound resi that corresponds to
+        nseqi.
+    '''
+    # Extract resn to resi mapping (like the sequence viewer on PyMol)...
+    # Non amino acid residue (like ligand) are bypassed
+    resn_to_resi_dict = resn_to_resi(chain_dict)
+
+    # Select the bound sequence by nseqi and cseqi...
+    tar_seq_bound           = tar_seq[nseqi : cseqi + 1]
+    tar_seq_bound_continous = tar_seq[nseqi : cseqi + 1].replace('-', '')
+
+    # Obtain the original sequence from PDB...
+    # May have overhead in the beginning or the end
+    seq_orig = ''.join([ v for v in resn_to_resi_dict.values() ])
+
+    # Obtain the starting index by string match...
+    lb_term = seq_orig.find(tar_seq_bound_continous)
+
+    # Obtain the ending index by the length of the coutinous (no '-') sequence...
+    ub_term = lb_term + len(tar_seq_bound_continous)
+
+    # Obtain list of resi bound by nseqi and cseqi...
+    resi_list       = [ v for v in resn_to_resi_dict.keys() ]
+    resi_bound_list = resi_list[lb_term : ub_term]
+
+    # Go through the super (consensus) sequence...
+    res_counter = 0
+
+    # Initialize mapping...
+    seqi_to_resi_dict = { k : None for k in range(nseqi, cseqi + 1) }
+
+    # Loop through
+    for i, seqi in enumerate(range(nseqi, cseqi + 1)):
+        # Skip the '-' residue...
+        if tar_seq_bound[i] == '-': continue
+
+        # Access the resi...
+        resi = resi_bound_list[res_counter]
+
+        # Record the mapping...
+        seqi_to_resi_dict[seqi] = resi
+
+        # Increment the residue counter...
+        res_counter += 1
+
+    return seqi_to_resi_dict
+
+
+
+
+def extract_xyz_by_seq(atoms_to_extract, chain_dict, tar_seq, nseqi, cseqi):
     ''' Use super_seq as framework to extract coordinates.  Each tar_seq is 
         considered as a subset of super_seq.  
 
         Sequence alignment directly determines the structure distance matrix.  
     '''
     # Obtain the seq to resi mapping...
-    seqi_to_resi_dict = seqi_to_resi(entry, chain_dict, tar_seq, nseqi, cseqi, nterm, cterm)
+    seqi_to_resi_dict = seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi)
 
     # Obtain size of the seqstr...
     len_chain = cseqi - nseqi + 1

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from math import inf
 from .utils import get_key_by_max_value
 from .constants  import constant_atomlabel, constant_aminoacid_code
 
@@ -139,56 +138,3 @@ def get_rseqi(seq):
     ''' Return the rightmost sequence index corresponds to first non-null ('-') resn.
     '''
     return seq.rfind( strip_null(seq)[-1] )
-
-
-
-
-def seqi_to_resi(entry, chain_dict, tar_seq, nseqi, cseqi, lb_term, ub_term):
-    ''' Map relative seqi to resi.
-        rseqi is bound by the length of tar_seq, and starts with index 0.  
-
-        TRICKY BOUND SITUATION [PLEASE READ]
-        ------------------------------------
-
-        lb_term refers to lower bound term, and ub_term referes to upper bound term.
-        Both bounds are loose bounds.  That is to say, lb_term doesn't have to 
-        match exactly the first residue in the tar_seq.  
-
-        Strict bound has to be enforced if a subset of tar_seq is required for analysis.  
-    '''
-    # Filter chain_dict...
-    chain_reduce_dict = \
-        { k : None for k in chain_dict.keys() if lb_term <= k <= ub_term }
-
-    # Obtain seq string for the current chain...
-    seqstr = tar_seq[nseqi : cseqi + 1]
-
-    # Go through the super (consensus) sequence...
-    res_counter = 0
-
-    # The list is not sorted by default
-    resi_list = sorted(list(chain_reduce_dict.keys()))
-    seqi_to_resi_dict = { k : None for k in range(nseqi, cseqi + 1) }
-
-    # Loop through 
-    for i, seqi in enumerate(range(nseqi, cseqi + 1)):
-        # Skip the '-' residue...
-        if seqstr[i] == '-': continue
-
-        # User friendly purpose
-        if not res_counter < len(resi_list): 
-            print(f"!!! Warning for {entry}")
-            print(f"The upper bound ({ub_term}) is still too small to cover the target sequence ({nseqi}-{cseqi}).")
-            print(f"")
-            break
-
-        # Access the resi...
-        resi = resi_list[res_counter]
-
-        # Record the mapping...
-        seqi_to_resi_dict[seqi] = resi
-
-        # Increment the residue counter...
-        res_counter += 1
-
-    return seqi_to_resi_dict
