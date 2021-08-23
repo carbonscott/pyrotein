@@ -425,6 +425,20 @@ The `examples` directory contains two examples about distance matrix and RMSD
 distance matrix.  Two visualization choices are provided via `Gnuplot` and
 `matplotlib`.  
 
+
+## Sequence-based joint analysis
+
+### Procedure
+
+- `cat pdb/*.fasta > step1.all.fasta`
+- `./fasta.step1.py` to extract chains defined in `xxx.db.xlsx`;  It returns
+  `step2.interest.fasta`
+- `cat step2.interest.fasta | pbcopy` and paste it into Clustal Omega
+- Check if terribly placed insertion will confuse sequence alignment.  
+  - Clustal Omega might return residue 'X'.  Repalce it with '-'.  Otherwise,
+    the string-match-based method to identify lower bound residue ID will fail.  
+
+
 ## Caveats
 
 The warning `RuntimeWarning: Mean of empty slice` is triggered by `np.nanmean`
