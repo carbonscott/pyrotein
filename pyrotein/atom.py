@@ -152,14 +152,14 @@ def filter_by_resn(chain_dict, resn):
 
 
 
-def extract_xyz_by_seq(atoms_to_extract, chain_dict, seq_dict, nseqi, cseqi):
+def extract_xyz_by_seq(atoms_to_extract, chain_dict, tar_seq, nseqi, cseqi, nterm, cterm):
     ''' Use super_seq as framework to extract coordinates.  Each tar_seq is 
         considered as a subset of super_seq.  
 
         Sequence alignment directly determines the structure distance matrix.  
     '''
     # Obtain the seq to resi mapping...
-    seqi_to_resi_dict = seqi_to_resi(chain_dict, seq_dict, nseqi, cseqi)
+    seqi_to_resi_dict = seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi, nterm, cterm)
 
     # Obtain size of the seqstr...
     len_chain = cseqi - nseqi + 1
@@ -197,6 +197,8 @@ def extract_xyz_by_atom(atoms_to_extract, chain_dict, nterm, cterm):
         if atoms_to_extract is empty `[]`, then it is derived from the resn.  
 
         Use chain_dict = atom_dict[chain] prior to use this function.  
+
+        All entry must have the same length for RMSD and SVD analysis.
     '''
     # Define atoms used for distance matrix analysis...
     len_backbone = (cterm - nterm + 1) * len(atoms_to_extract)

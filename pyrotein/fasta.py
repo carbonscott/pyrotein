@@ -165,14 +165,23 @@ def get_rseqi(seq):
 
 
 
-def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
-    ''' Map tar_seq index to chain_dict resi.  
-        Each tar_seq is considered as a subset of super_seq.  
+def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi, lb_term, ub_term):
+    ''' Map relative seqi to resi.
+        rseqi is bound by the length of tar_seq, and starts with index 0.  
 
-        Coordinates in chain_dict are extracted according to
+        TRICKY BOUND SITUATION [PLEASE READ]
+        ------------------------------------
 
-        chain_dict = atom_dict[chain]
+        lb_term refers to lower bound term, and ub_term referes to upper bound term.
+        Both bounds are loose bounds.  That is to say, lb_term doesn't have to 
+        match exactly the first residue in the tar_seq.  
+
+        Strict bound has to be enforced if a subset of tar_seq is required for analysis.  
     '''
+    # Filter chain_dict...
+    chain_reduce_dict = \
+        { k : None for k in chain_dict.keys() if lb_term <= k <= ub_term }
+
     # Obtain seq string for the current chain...
     seqstr = tar_seq[nseqi : cseqi + 1]
 
@@ -180,7 +189,7 @@ def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
     res_counter = 0
 
     # The list is not sorted by default
-    resi_list = sorted(list(chain_dict.keys()))
+    resi_list = sorted(list(chain_reduce_dict.keys()))
     seqi_to_resi_dict = { k : None for k in range(nseqi, cseqi + 1) }
 
     # Loop through 
