@@ -72,28 +72,6 @@ def resi_to_seqi(resi, super_seq, nterm):
 
 
 
-## def seq_to_resi(seq, resi_non_null, null = '-'):
-##     ''' Map seq index to resi.  
-##         seq is a sequence.  
-##         resi_non_null is the resi to the first non '-' residue.  
-## 
-##         [BUG] This function assumes resi changes incrementally by +1.  
-##     '''
-##     seqmask = mask_seq(seq, null = null)
-## 
-##     id_aux = resi_non_null
-##     seq_to_resi_dict = {}
-##     for k, v in seqmask.items():
-##         if v :
-##             seq_to_resi_dict[k] = id_aux
-##             id_aux += 1
-##         else:
-##             seq_to_resi_dict[k] = None
-##     return seq_to_resi_dict
-
-
-
-
 def tally_resn_in_seqs(seq_dict):
     ''' Tally the occurence of each residue from a sequence alignment fasta file.
         The input is a seqeuence dictionary.  
