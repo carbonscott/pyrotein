@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from math import inf
 from .constants  import constant_atomlabel, constant_aminoacid_code
 from .fasta import seqi_to_resi
 
@@ -151,48 +152,14 @@ def filter_by_resn(chain_dict, resn):
 
 
 
-## def seqi_to_resi(chain_dict, seq_dict, nterm, nseqi, cseqi):
-##     ''' Map seq_dict index to chain_dict resi.  
-##         Coordinates in chain_dict are extracted according to
-##         - nterm: the starting point
-## 
-##         chain_dict = atom_dict[chain]
-##     '''
-##     # Obtain seq string for the current chain...
-##     seqstr = seq_dict[nseqi : cseqi + 1]
-## 
-##     # Go through the super (consensus) sequence...
-##     res_counter = 0
-##     resi_list   = list(chain_dict.keys())
-##     resi_list   = [ i for i in resi_list if not i < nterm ]
-##     seq_to_resi_dict = {}
-##     for i, seqi in enumerate(range(nseqi, cseqi + 1)):
-##         # Skip the '-' residue...
-##         if seqstr[i] == '-': continue
-## 
-##         # Obtain the current available resi...
-##         resi = resi_list[res_counter]
-## 
-##         # Record the mapping...
-##         seq_to_resi_dict[seqi] = resi
-##         ## seq_to_resi_dict[i] = resi
-## 
-##         # Increment the residue counter...
-##         res_counter += 1
-## 
-##     return seq_to_resi_dict
+def extract_xyz_by_seq(atoms_to_extract, chain_dict, seq_dict, nseqi, cseqi):
+    ''' Use super_seq as framework to extract coordinates.  Each tar_seq is 
+        considered as a subset of super_seq.  
 
-
-
-
-def extract_xyz_by_seq(atoms_to_extract, chain_dict, nterm, seq_dict, nseqi, cseqi):
-    ''' Use super_seq as framework to extract coordinates.
-        Coordinates in chain_dict are extracted according to
-        - nterm: the starting point
-        - seqstr: the aligned string by multiple sequence alignment (MSA)
+        Sequence alignment directly determines the structure distance matrix.  
     '''
     # Obtain the seq to resi mapping...
-    seqi_to_resi_dict = seqi_to_resi(chain_dict, nterm, seq_dict, nseqi, cseqi)
+    seqi_to_resi_dict = seqi_to_resi(chain_dict, seq_dict, nseqi, cseqi)
 
     # Obtain size of the seqstr...
     len_chain = cseqi - nseqi + 1

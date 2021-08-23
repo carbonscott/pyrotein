@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from math import inf
 from .utils import get_key_by_max_value
 from .constants  import constant_atomlabel, constant_aminoacid_code
 
@@ -164,37 +165,35 @@ def get_rseqi(seq):
 
 
 
-def seqi_to_resi(chain_dict, nterm, seq_dict, nseqi, cseqi):
-    ''' Map seq_dict index to chain_dict resi.  
+def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
+    ''' Map tar_seq index to chain_dict resi.  
+        Each tar_seq is considered as a subset of super_seq.  
+
         Coordinates in chain_dict are extracted according to
-        - nterm: the starting point
 
         chain_dict = atom_dict[chain]
     '''
     # Obtain seq string for the current chain...
-    seqstr = seq_dict[nseqi : cseqi + 1]
+    seqstr = tar_seq[nseqi : cseqi + 1]
 
     # Go through the super (consensus) sequence...
     res_counter = 0
-    resi_list   = list(chain_dict.keys())
-    resi_list   = [ i for i in resi_list if not i < nterm ]
-    seq_to_resi_dict = {}
+
+    # The list is not sorted by default
+    resi_list = sorted(list(chain_dict.keys()))
+    seqi_to_resi_dict = { k : None for k in range(nseqi, cseqi + 1) }
+
+    # Loop through 
     for i, seqi in enumerate(range(nseqi, cseqi + 1)):
         # Skip the '-' residue...
         if seqstr[i] == '-': continue
 
-        # Obtain the current available resi...
         resi = resi_list[res_counter]
 
         # Record the mapping...
-        seq_to_resi_dict[seqi] = resi
-        ## seq_to_resi_dict[i] = resi
+        seqi_to_resi_dict[seqi] = resi
 
         # Increment the residue counter...
         res_counter += 1
 
-    return seq_to_resi_dict
-
-
-
-
+    return seqi_to_resi_dict
