@@ -143,7 +143,7 @@ def get_rseqi(seq):
 
 
 
-def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi, lb_term, ub_term):
+def seqi_to_resi(entry, chain_dict, tar_seq, nseqi, cseqi, lb_term, ub_term):
     ''' Map relative seqi to resi.
         rseqi is bound by the length of tar_seq, and starts with index 0.  
 
@@ -175,6 +175,14 @@ def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi, lb_term, ub_term):
         # Skip the '-' residue...
         if seqstr[i] == '-': continue
 
+        # User friendly purpose
+        if not res_counter < len(resi_list): 
+            print(f"!!! Warning for {entry}")
+            print(f"The upper bound ({ub_term}) is still too small to cover the target sequence ({nseqi}-{cseqi}).")
+            print(f"")
+            break
+
+        # Access the resi...
         resi = resi_list[res_counter]
 
         # Record the mapping...

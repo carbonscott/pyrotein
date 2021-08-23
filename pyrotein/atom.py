@@ -152,14 +152,14 @@ def filter_by_resn(chain_dict, resn):
 
 
 
-def extract_xyz_by_seq(atoms_to_extract, chain_dict, tar_seq, nseqi, cseqi, nterm, cterm):
+def extract_xyz_by_seq(entry, atoms_to_extract, chain_dict, tar_seq, nseqi, cseqi, nterm, cterm):
     ''' Use super_seq as framework to extract coordinates.  Each tar_seq is 
         considered as a subset of super_seq.  
 
         Sequence alignment directly determines the structure distance matrix.  
     '''
     # Obtain the seq to resi mapping...
-    seqi_to_resi_dict = seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi, nterm, cterm)
+    seqi_to_resi_dict = seqi_to_resi(entry, chain_dict, tar_seq, nseqi, cseqi, nterm, cterm)
 
     # Obtain size of the seqstr...
     len_chain = cseqi - nseqi + 1
