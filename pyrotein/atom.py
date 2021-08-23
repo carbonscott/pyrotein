@@ -208,11 +208,11 @@ def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
     resi_list       = [ v for v in resn_to_resi_dict.keys() ]
     resi_bound_list = resi_list[lb_term : ub_term]
 
-    # Go through the super (consensus) sequence...
-    res_counter = 0
-
     # Initialize mapping...
     seqi_to_resi_dict = { k : None for k in range(nseqi, cseqi + 1) }
+
+    # Counter to go through the bound sequence by nseqi and cseqi...
+    res_counter = 0
 
     # Loop through
     for i, seqi in enumerate(range(nseqi, cseqi + 1)):
