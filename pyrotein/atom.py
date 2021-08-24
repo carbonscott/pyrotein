@@ -3,6 +3,8 @@
 
 import numpy as np
 from .constants  import constant_atomlabel, constant_aminoacid_code
+from .utils import chunker, sort_dict_by_key
+from difflib import ndiff
 
 ''' The program extracts atomic information from a truncated pdb file that is
     exported from PyMol after a selection statement is executed, and thus has a
@@ -50,8 +52,7 @@ def split(line):
 def read(file):
     ''' Extract atomic information for every atom.  
     '''
-    lines = []   
-
+    lines = []
     with open(file,'r') as fh:
         for line in fh.readlines():
             # Skip lines not starting with ATOM or HETATM...
@@ -150,15 +151,6 @@ def filter_by_resn(chain_dict, resn):
 
 
 
-def sort_dict_by_key(_dict):
-    ''' PDB doesn't sort resn by resi by default.  This function sorts resn by 
-        resi in an ascending order.  
-    '''
-    return { k : v for k, v in sorted(_dict.items(), key = lambda x : x[0]) }
-
-
-
-
 def resn_to_resi(chain_dict):
     ''' Extract resn to resi mapping (like the sequence viewer on PyMol)
     '''
@@ -186,6 +178,9 @@ def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
         Key step is to recognize the lower bound resi that corresponds to
         nseqi.
     '''
+    # Initialize mapping...
+    seqi_to_resi_dict = { k : None for k in range(nseqi, cseqi + 1) }
+
     # Extract resn to resi mapping (like the sequence viewer on PyMol)...
     # Non amino acid residue (like ligand) are bypassed
     resn_to_resi_dict = resn_to_resi(chain_dict)
@@ -201,15 +196,20 @@ def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
     # Obtain the starting index by string match...
     lb_term = seq_orig.find(tar_seq_bound_continous)
 
+    # Warn user about illegal input sequence...
+    if lb_term == -1: 
+        print(f"Illegal input sequence!!!")
+        print(f"-------------------------")
+        for s1, s2 in zip(chunker(tar_seq_bound_continous, 60), chunker(seq_orig, 60)):
+            for di, dv in enumerate(ndiff([s1], [s2])): print(dv)
+        return seqi_to_resi_dict
+
     # Obtain the ending index by the length of the coutinous (no '-') sequence...
     ub_term = lb_term + len(tar_seq_bound_continous)
 
     # Obtain list of resi bound by nseqi and cseqi...
     resi_list       = [ v for v in resn_to_resi_dict.keys() ]
     resi_bound_list = resi_list[lb_term : ub_term]
-
-    # Initialize mapping...
-    seqi_to_resi_dict = { k : None for k in range(nseqi, cseqi + 1) }
 
     # Counter to go through the bound sequence by nseqi and cseqi...
     res_counter = 0

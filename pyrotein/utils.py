@@ -301,3 +301,22 @@ def tally_list1d(int_list):
         int_dict[i] += 1
 
     return int_dict
+
+
+
+
+def chunker(seq, size = 60):
+    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
+
+
+
+
+def sort_dict_by_key(_dict):
+    ''' PDB doesn't sort resn by resi by default.  This function sorts resn by 
+        resi in an ascending order.  
+    '''
+    return { k : v for k, v in sorted(_dict.items(), key = lambda x : x[0]) }
+
+
+
+
