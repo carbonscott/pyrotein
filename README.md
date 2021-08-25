@@ -434,9 +434,14 @@ distance matrix.  Two visualization choices are provided via `Gnuplot` and
 - `./fasta.step1.py` to extract chains defined in `xxx.db.xlsx`;  It returns
   `step2.interest.fasta`
 - `cat step2.interest.fasta | pbcopy` and paste it into Clustal Omega
+- `fasta.check.py` to check if the default `nseqi` and `cseqi` are good enough
+  otherwise determine `nseqi` and `cseqi` manually
 - Check if terribly placed insertion will confuse sequence alignment.  
   - Clustal Omega might return residue 'X'.  Repalce it with '-'.  Otherwise,
     the string-match-based method to identify lower bound residue ID will fail.  
+- `cseqi` can be manually determined if the default `cseqi` is too large.  
+- PyMol fetched `fasta` file might contain extra residue that might not have a
+  coordinate available in PDB.  Replace those residue with '-' too.  
 
 
 ## Caveats
@@ -448,3 +453,22 @@ If RMSD analysis gives very smeared intensities, you need to check sequence
 similarities.  How different are they?  In groups or just a few outliers.  
 Does the sequence alignment make sense? (It doesn't do a good job for a minority
 of entries that have a long insertion.)  
+
+About the quadratic mean (or room mean square)
+
+- RMS of `u = |u| / len(u)`
+- `|u|` is root of squared sum, or `|u| = np.sqrt(np.dot(u, u.T))`.  
+- `|u| = 1` because SVD has normalized `u`.  
+- So `RMS(u) = 1 / len(u)`
+- SVD breaks down `dmats.T` into `u`, `s`, and `vh`, the unit is carried by `s`.  
+  ```
+  c = RMS(u @ s, axis = 0) @ vh
+      ^^^ ~~~~~            ^^^^
+       |    |               |
+       |    |_______________|__ Apply unit (typical Angstrom) to u matrix
+       |                    |
+       |____________________|__ Get the quadratic mean (RMS), each column carries the RMS for each SVD component
+                            |
+                            |__ Apply the mean to scatter plot, the distance between two spots in the scatter plot is like the RMSD.
+  ```
+- Equivalently, `c = RMS(u) * (s @ vh)`
