@@ -8,7 +8,6 @@ from .constants  import constant_atomlabel, constant_aminoacid_code
 def read(fl_fasta):
     ''' Extract sequence from a fasta file.  
     '''
-
     seq = {}
     with open(fl_fasta,'r') as fh:
         for line in fh.readlines():
@@ -18,6 +17,17 @@ def read(fl_fasta):
             else: seq[k] += line.rstrip()
 
     return seq
+
+
+
+
+def write(fl_fasta, entry, seqstr):
+    ''' Write a sequence to a fasta file.  
+    '''
+    with open(fl_fasta,'w') as fh:
+        fh.write(f">{entry}\n")
+        fh.write(f"{seqstr}\n")
+
 
 
 
