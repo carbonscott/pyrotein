@@ -8,34 +8,28 @@
 import os
 import numpy as np
 import pyrotein as pr
-from loaddata import load_xlsx
+from loaddata import load_gpcrdb_xlsx
 from display import plot_dmat
 
 # [[[ OBTAIN THE CONSENSUS SEQUENCE ]]]
 # Read the sequence alignment result...
-# [WARNING] !!!sequence alignment is not trustworthy
-fl_aln   = 'step3.msa.fasta'
+fl_aln   = 'step4.psa.fil.fasta'
 seq_dict = pr.fasta.read(fl_aln)
-
 
 # Obtain the consensus sequence (super seq)...
 tally_dict = pr.fasta.tally_resn_in_seqs(seq_dict)
 super_seq  = pr.fasta.infer_super_seq(tally_dict)
 
+# [[[ LOAD DATABASE ]]]
+# Specify chains to process...
+fl_chain = "gpcrdb.all.xlsx"
+lines    = load_gpcrdb_xlsx(fl_chain, sheet = "total", splitchain = True)
+drc      = "pdb"
 
 # [[[ FIND SIZE OF DISTANCE MATRIX ]]]
 # Get the sequence index (alignment) on the n-term side...
 nseqi = pr.fasta.get_lseqi(super_seq)
 cseqi = pr.fasta.get_rseqi(super_seq)
-
-
-# Specify chains to process...
-fl_chain = "rhodopsin.db.xlsx"
-lines    = load_xlsx(fl_chain, sheet = "total", splitchain = True)
-drc      = "pdb"
-
-# Define atoms used for distance matrix analysis...
-peptide = ["N", "CA", "C", "O"]
 
 # Define atoms used for distance matrix analysis...
 backbone = ["N", "CA", "C", "O"]
@@ -45,9 +39,14 @@ len_seq = (cseqi - nseqi + 1) * len_res
 # Accumulate distance matices as lower triangluar matrix...
 len_lower_tri = (len_seq * len_seq - len_seq) // 2
 dmats = np.zeros((len(lines), len_lower_tri))
+
+# [[[ PROCESS SVD ]]]
 for i_fl, line in enumerate(lines):
     # Unpack parameters
-    _, pdb, chain, nterm, cterm = line[:5]
+    uniprot = line[1].lower()
+    spec    = line[5].lower()
+    pdb     = line[7].lower()
+    chain   = line[10].upper()
 
     # Read coordinates from a PDB file...
     fl_pdb    = f"{pdb}.pdb"
@@ -87,3 +86,4 @@ np.save("u.seq.npy" , u)
 np.save("s.seq.npy" , s)
 np.save("vh.seq.npy", vh)
 np.save("len_seq.npy", len_seq)
+np.save("len_res.npy", len_res)
