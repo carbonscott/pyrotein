@@ -49,25 +49,25 @@ def plot_dmat(
     if len(lbl) > 0: 
         for k, (b,e) in lbl.items():
             # Vertical lines (beginning of a region)
-            cmd = f"set arrow front from {b-1},graph 0 to {b-1},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmd = f"set arrow front from {b},graph 0 to {b},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
             cmds_lbl_bottom.append(cmd)
             cmds_lbl_top.append(cmd)
 
             # Vertical lines (end of a region)
-            cmd = f"set arrow front from {e-1},graph 0 to {e-1},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmd = f"set arrow front from {e},graph 0 to {e},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
             cmds_lbl_bottom.append(cmd)
             cmds_lbl_top.append(cmd)
 
             # Horizontal lines (beginning of a region)
-            cmd = f"set arrow front from graph 0,first {b-1} to graph 1,first {b-1} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmd = f"set arrow front from graph 0,first {b} to graph 1,first {b} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
             cmds_lbl_bottom.append(cmd)
 
             # Horizontal lines (end of a region)
-            cmd = f"set arrow front from graph 0,first {e-1} to graph 1,first {e-1} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmd = f"set arrow front from graph 0,first {e} to graph 1,first {e} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
             cmds_lbl_bottom.append(cmd)
 
             # Put labels on the diagonal...
-            lbl[k] = [ (b + e) // 2, (b + e) // 2 ]
+            lbl[k] = [ (b + e) // 2, (b + e) // 2  ]
 
     # [[[ Visualize ]]]
     num_items = len(dmat)
@@ -304,7 +304,7 @@ def plot_left_singular(u, rank, length_mat,
     # Colorscheme is inspired by [this paper](https://academic.oup.com/nar/article/44/15/7457/2457750)
     if palette is None:
         palette = "set palette defined \
-               (-10 '#F6FF9E', -10 '#800000', -5 'red', -1 'white', 0 'seagreen', \
+               (-10 '#800000', -5 'red', -1 'white', 0 'seagreen', \
                   1 'white'  , 5 'blue', 10 'navy')"
 
     # Filename to export...
@@ -523,6 +523,117 @@ def showHistogram(data, bin_cap, rng, title, cmds = []):
         if data_rng[i+1] > rng[1]: continue
         gp(f"{data_rng[i]} {data_val[i]}")  
         gp(f"{data_rng[i+1]} {data_val[i]}")  
+    gp("e")
+
+    gp("exit")
+
+    return None
+
+
+
+
+def plot_u_ave(
+    u,                    # Input data, which is a distance matrix
+    rank,
+    length_mat,
+    lbl = {},                # Labels used to mark on the diagonal
+    lbl_fontsize = 8,        # Fontsize for label
+    xrange = ("*", "*"),
+    yrange = ("*", "*"),
+    width         = 5,       # inch
+    height        = 1.5,     # inch
+    fontsize      = 14,      # pt
+    linewidth     = 1.0,     # pt
+    intst_min     = "0",     # Min intensity value
+    intst_max     = "*",     # Max intensity value
+    showzero      = True,
+    fl_path       = '.',
+    fl_postfix      = '',
+    cmds          = [],
+    index_from_zero = True,
+    ):
+    # Comply with the convention (1-based index)
+    rank_in_data = rank if index_from_zero else rank - 1
+
+    # Convert `u` at position `rank` into a lower triangular matrix...
+    dmat = pr.utils.array2tril(u[:, rank_in_data], length_mat, offset = -1)
+
+    # Restore dmat to a full matrix for visualization...
+    dmat_full = dmat + dmat.T
+
+    # Get the mean...
+    column_mean_dmat = np.nanmean(dmat_full, axis = 0, keepdims = False)
+
+    # Draw lbl (optional)...
+    cmds_lbl_top = [""]
+    cmds_lbl_bottom = [""]
+    color_lbl = '#BBBBBB'
+    if len(lbl) > 0: 
+        for k, (b,e) in lbl.items():
+            # Vertical lines (beginning of a region)
+            cmd = f"set arrow front from {b},graph 0 to {b},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+            cmds_lbl_top.append(cmd)
+
+            # Vertical lines (end of a region)
+            cmd = f"set arrow front from {e},graph 0 to {e},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+            cmds_lbl_top.append(cmd)
+
+            # Horizontal lines (beginning of a region)
+            cmd = f"set arrow front from graph 0,first {b} to graph 1,first {b} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+
+            # Horizontal lines (end of a region)
+            cmd = f"set arrow front from graph 0,first {e} to graph 1,first {e} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+
+            # Put labels on the diagonal...
+            lbl[k] = (b + e) // 2
+
+    # [[[ Visualize ]]]
+    num_items = len(dmat)
+    if intst_max == "*":
+        intst_min = np.nanmin(dmat)
+        intst_max = np.nanmax(dmat)
+    intst_column_mean_min = np.min( [np.nanmin(column_mean_dmat), 0] )
+    intst_column_mean_max = np.max( [np.nanmax(column_mean_dmat), 0] )
+
+    # Filename to export...
+    fl_export = os.path.join(fl_path, f"ave.{rank:02d}.{fl_postfix}")
+
+    # Begin Gnuplot
+    gp = GnuplotPy3.GnuplotPy3()
+    gp(f"set terminal postscript eps  size {width}, {height} \\")
+    gp(f"                             enhanced color \\")
+    gp(f"                             font 'Helvetica,{fontsize}' \\")
+    gp(f"                             linewidth {linewidth}")
+
+    # Declare the filename to export...
+    gp(f"set output '{fl_export}.eps'")
+    gp("unset key")
+
+    gp(f"set xrange [-1:{num_items}]")
+    gp(f"set yrange [{intst_column_mean_min}:{intst_column_mean_max}]")
+    gp(f"set border linewidth {linewidth}")
+
+    if xrange != ("*", "*"): gp(f"set xrange [{xrange[0]}:{xrange[1]}]")
+    if yrange != ("*", "*"): gp(f"set yrange [{yrange[0]}:{yrange[1]}]")
+
+    for k, x in lbl.items():
+        gp(f"set label '{k}' at {x},graph 0.9 left rotate by 90 font ', {lbl_fontsize}' front")
+
+    if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth 1.0 linecolor rgb 'black'")
+
+    for cmd in cmds_lbl_top:
+        gp(cmd)
+
+    for cmd in cmds:
+        gp(cmd)
+
+    gp(f"plot '-' using 1:2 with lines linewidth {linewidth} linecolor rgb 'black' title 'Column mean'")
+    for i,v in enumerate(column_mean_dmat):
+        gp(f"{i} {v}")
     gp("e")
 
     gp("exit")
