@@ -212,6 +212,274 @@ def plot_dmat(
 
 
 
+def plot_rmsd_dmat(
+    dmat,                    # Input data, which is a distance matrix
+    fl_dmat,                 # Filename of the exported file
+    lbl = {},                # Labels used to mark on the diagonal
+    lbl_fontsize = 8,        # Fontsize for label
+    diaglbl       = {},      # diagonal label (usually for showing index)
+    diaglblfontsize = 5,
+    pop_bin_cap = None,      # Plot framework
+    fwk_mid = None,
+    fwk_tol = 0.1,
+    fwk_minsize = 10,
+    fwk_linewidth = 2,
+    fwk_curve_color = "black",
+    fwk_box_color = "black",
+    width         = 6,       # inch
+    height        = 7,       # inch
+    fontsize      = 14,      # pt
+    linewidth     = 1.0,     # pt
+    lbl_linewidth = 2.0,     # pt
+    curve_linewidth = 2.0,     # pt
+    curve_color   = "gray",
+    palette       = "",      # Palette definition
+    intst_min     = "0",     # Min intensity value
+    intst_max     = "*",     # Max intensity value
+    vrange        = [],
+    showzero      = True,
+    showcolorbox  = True,
+    NaN           = "NaN",
+    temp          = True,
+    mode          = "image", # "image", "sparse", "pm3d"
+    showsparselabel = False,
+    cmds_top      = [],      # Customized command for upper panel
+    cmds_bottom   = [],      # Customized command for bottom panel
+    ):
+    assert len(vrange) == 0 or len(vrange) == 2, "vrange has to be an empty or 2-member tuple.  "
+
+    # Partial???
+    range_default = ("*", "*")
+    if len(vrange) == 2: fl_dmat = f"{fl_dmat}.zoom"
+
+    # Get the mean...
+    column_mean_dmat = np.nanmean(dmat, axis = 0, keepdims = False)
+
+    # Draw lbl (optional)...
+    cmds_lbl_top = [""]
+    cmds_lbl_bottom = [""]
+    color_lbl = '#BBBBBB'
+    _lbl = {}
+    if len(lbl) > 0: 
+        for k, (b,e) in lbl.items():
+            # Vertical lines (beginning of a region)
+            cmd = f"set arrow front from {b},graph 0 to {b},graph 1 nohead dashtype 2 linewidth {lbl_linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+            cmds_lbl_top.append(cmd)
+
+            # Vertical lines (end of a region)
+            cmd = f"set arrow front from {e},graph 0 to {e},graph 1 nohead dashtype 2 linewidth {lbl_linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+            cmds_lbl_top.append(cmd)
+
+            # Horizontal lines (beginning of a region)
+            cmd = f"set arrow front from graph 0,first {b} to graph 1,first {b} nohead dashtype 2 linewidth {lbl_linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+
+            # Horizontal lines (end of a region)
+            cmd = f"set arrow front from graph 0,first {e} to graph 1,first {e} nohead dashtype 2 linewidth {lbl_linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+
+            # Put labels on the diagonal...
+            _lbl[k] = [ (b + e) // 2, (b + e) // 2  ]
+
+    # [[[ Visualize ]]]
+    num_items = len(dmat)
+    if intst_max == "*":
+        intst_min = np.nanmin(dmat)
+        intst_max = np.nanmax(dmat)
+    intst_column_mean_min = np.min( [np.nanmin(column_mean_dmat), 0] )
+    intst_column_mean_max = np.max( [np.nanmax(column_mean_dmat), 0] )
+
+    # Create tempfile to visualize half matrix...
+    fl_temp = f"{fl_dmat}.dat"
+    if temp: fl_temp = tempfile.mktemp(".temp.dat")
+    with open(fl_temp,'w') as fh:
+        for j in range(num_items):
+            for k in range(j if mode != 'image' else num_items):
+                if mode == "sparse":
+                    if np.isnan(dmat[j, k]): continue
+                    ## if not intst_min < dmat[j, k] < intst_max: continue
+                val = NaN if np.isnan(dmat[j, k]) else dmat[j, k]
+                fh.write(f"{k} {j} {val}\n")
+            fh.write("\n")
+
+
+    # [[[ RIGID FRAMEWORK ]]]
+    # Get the population density of all rmsd...
+    if not pop_bin_cap is None:
+        bin_val, bin_edge = pr.utils.population_density(column_mean_dmat, bin_cap = pop_bin_cap)
+        idx_bin_val_max = bin_val.index(max(bin_val))
+        bin_edge_at_max = bin_edge[idx_bin_val_max]
+
+        print(f"The most frequent RMSD value occurs at {bin_edge_at_max}")
+
+    # Rigid framework...
+    rigid_fwks = []
+    if not fwk_mid is None:
+        vmin, vmax = fwk_mid - fwk_tol, fwk_mid + fwk_tol
+        cond = np.logical_and( vmin < column_mean_dmat, column_mean_dmat <  vmax )
+
+        rigid_fwk_idx = np.argwhere(cond).reshape(-1)
+        rigid_fwk_raw = pr.utils.group_consecutive_integer(rigid_fwk_idx)
+        rigid_fwks = [ i for i in rigid_fwk_raw if len(i) > fwk_minsize ]
+
+        mean_fwk = np.mean(np.take(column_mean_dmat, [ i for j in rigid_fwks for i in j ]))
+        print(f"The mean RMSD is {mean_fwk}.")
+
+        for i in range(len(rigid_fwks)):
+            cmd = []
+            b1, e1 = [ rigid_fwks[i][0], rigid_fwks[i][-1] ]
+            cmd.append(f"set object rectangle front from {b1},{e1} to {e1},{b1} fs empty border linecolor rgb 'black'")
+            for j in range(i + 1, len(rigid_fwks)):
+                b2, e2 = [ rigid_fwks[j][0], rigid_fwks[j][-1] ]
+                cmd.append(f"set object rectangle front from {b1},{b2} to {e1},{e2} fs empty linecolor rgb '{fwk_box_color}'")
+            cmds_bottom.extend(cmd)
+
+
+    # Begin Gnuplot
+    gp = GnuplotPy3.GnuplotPy3()
+    gp(f"set terminal postscript eps  size {width}, {height} \\")
+    gp(f"                             enhanced color \\")
+    gp(f"                             font 'Helvetica,{fontsize}' \\")
+    gp(f"                             linewidth {linewidth}")
+
+    # Declare the filename to export...
+    gp(f"set output '{fl_dmat}.eps'")
+    gp("unset key")
+
+    # Declare a multiplot...
+    gp("set origin 0,0")
+    gp("set size 1,1")
+    gp("unset bmargin")
+    gp("unset tmargin")
+    gp("unset lmargin")
+    gp("unset rmargin")
+    gp("set multiplot title ''")
+
+
+    # PLOT 1: mean dmat...
+    gp(f"unset xrange")
+    gp(f"unset yrange")
+    gp("unset xtics")
+    gp("unset ytics")
+    gp(f"unset logscale")
+    gp("set origin 0,0.70")
+    gp("set size   1,0.15")
+    gp("set tmargin 0")
+    gp("set bmargin at screen 0.70")
+    gp("set lmargin at screen 0.10")
+    gp("set rmargin at screen 0.85")
+    gp(f"set xrange [-1:{num_items}]")
+    gp(f"set yrange [{intst_column_mean_min}:{intst_column_mean_max}]")
+    gp("set key top right")
+    gp(f"set border linewidth {linewidth}")
+    gp("set view map")
+
+    if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth {lbl_linewidth} linecolor rgb 'black'")
+
+    for cmd in cmds_lbl_top:
+        gp(cmd)
+
+    for cmd in cmds_top:
+        gp(cmd)
+
+    if mode == "pm3d":
+        gp(f"splot \\")
+        gp(f"'-' using 1:2:3 with lines linewidth {curve_linewidth} linecolor rgb '{curve_color}' title 'Column mean', \\")
+        if len(rigid_fwks): gp(f"'-' using 1:2:3 with lines linewidth {fwk_linewidth} linecolor rgb '{fwk_curve_color}' notitle, \\")
+        gp(f"")
+
+        for i,v in enumerate(column_mean_dmat):
+            gp(f"{i} {v} 0")
+        gp("e")
+
+        for fwk in rigid_fwks:
+            for i in fwk:
+                v = column_mean_dmat[i]
+                gp(f"{i} {v}")
+            gp(" ")
+        if len(rigid_fwks): gp("e")
+    else:
+        gp(f"plot \\")
+        gp(f"'-' using 1:2 with lines linewidth {curve_linewidth} linecolor rgb '{curve_color}' title 'Column mean', \\")
+        if len(rigid_fwks): gp(f"'-' using 1:2 with lines linewidth {fwk_linewidth} linecolor rgb '{fwk_curve_color}' notitle, \\")
+        gp("")
+
+        for i,v in enumerate(column_mean_dmat):
+            gp(f"{i} {v}")
+        gp("e")
+
+        for fwk in rigid_fwks:
+            for i in fwk:
+                v = column_mean_dmat[i]
+                gp(f"{i} {v}")
+            gp(" ")
+        if len(rigid_fwks): gp("e")
+
+
+    # PLOT 2: distance matrix...
+    gp(f"unset arrow")
+    gp(f"unset key")
+    gp(f"unset xrange")
+    gp(f"unset yrange")
+    gp(f"unset xtics")
+    gp(f"unset ytics")
+    gp(f"unset logscale")
+    gp("unset bmargin")
+    gp("unset tmargin")
+    gp("unset lmargin")
+    gp("unset rmargin")
+    gp("set origin 0,0.0")
+    gp("set size   1.0,0.70")
+    gp("set tmargin at screen 0.7")
+    gp("set bmargin at screen 0.05")
+    gp("set lmargin at screen 0.10")
+    gp("set rmargin at screen 0.85")
+    gp(f"set xrange [-1          :{num_items}   ]")
+    gp(f"set yrange [{num_items}   :-1          ]")
+    gp(f"set border linewidth {linewidth}")
+
+    for k, (x, y) in _lbl.items():
+        gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {lbl_fontsize}' front")
+
+    for k, (x, y) in diaglbl.items():
+        gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {diaglblfontsize}' front")
+
+    if palette == "":
+        gp("set palette defined ( -0.001 'white', 0 'blue', 0.5 'light-grey', 1 'red' )")
+    else:
+        gp(palette)
+    gp(f"set cbrange [{intst_min}:{intst_max}]")
+    gp(f"set cbtics font ',{lbl_fontsize}'")
+    if not showcolorbox: gp(f"unset colorbox")
+
+    for cmd in cmds_lbl_bottom:
+        gp(cmd)
+
+    for cmd in cmds_bottom:
+        gp(cmd)
+
+    if mode == 'sparse':
+        gp("plot \\")
+        gp(f"'{fl_temp}' using 1:2:3 with points pointtype 6 pointsize 0.5 linewidth 0.0 linecolor palette, \\")
+        if showsparselabel:
+            gp(f"'{fl_temp}' using 1:2:(sprintf('%d,%d', int($1), int($2))) with labels offset 0.5,.3 rotate by 45 font ',3', \\")
+        gp("")
+    if mode == 'image':
+        gp(f"plot '{fl_temp}' using 1:2:3 with image")
+    if mode == 'pm3d':
+        gp("set view map")
+        gp(f"splot '{fl_temp}' using 1:2:3 with pm3d")
+
+    gp("unset multiplot")
+    gp("exit")
+
+    return None
+
+
+
+
 def plot_singular(s, top = 3, fl_export = "singular", 
                               width = 5.65, 
                               height = 5.65,
@@ -272,7 +540,9 @@ def plot_left_singular(u, rank, length_mat,
                                 diaglblfontsize = 5,
                                 width           = 6,
                                 height          = 7,
-                                linewidth       = 1.0,
+                                linewidth     = 1.0,     # pt
+                                lbl_linewidth = 2.0,     # pt
+                                curve_linewidth = 2.0,     # pt
                                 fontsize        = 14,
                                 lbl_fontsize    = 10,
                                 palette         = None,
@@ -332,6 +602,8 @@ def plot_left_singular(u, rank, length_mat,
               height          = height,     # inch
               fontsize        = fontsize,
               linewidth       = linewidth,
+              lbl_linewidth   = lbl_linewidth,
+              curve_linewidth = curve_linewidth,
               palette         = palette, 
               vrange          = vrange,
               temp            = temp,
@@ -345,7 +617,7 @@ def plot_left_singular(u, rank, length_mat,
 
 def plot_coeff(c, rank1, rank2, lbl = {},
                                 label = True,
-                                labeltext = [],
+                                label_dict = {},
                                 join_dict = {},
                                 xrange = ("*", "*"),
                                 yrange = ("*", "*"),
@@ -425,7 +697,7 @@ def plot_coeff(c, rank1, rank2, lbl = {},
 
         if label:
             # Label each dot that is colored only (even thought it's selected from metadata)
-            for i, point_label in enumerate(labeltext):
+            for point_label, i in label_dict.items():
                 gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]} {point_label} {rot}")  
             gp("e")
 
@@ -484,12 +756,25 @@ def plot_blankcoeff(rank1, width, height, fl_path, fl_postfix, index_from_zero =
 
 
 
-def select_items(lines, col, offset = 0):
+## def select_items(lines, col, offset = 0):
+##     ''' Select the value from column (col).  
+##     '''
+##     citems = {}
+##     for i, v in enumerate(lines):
+##         val = v[col]
+##         if not val in citems: citems[val] = [i + offset]
+##         else: citems[val].append(i + offset)
+##     return citems
+
+
+
+
+def select_items(line_dict, col, offset = 0):
     ''' Select the value from column (col).  
     '''
     citems = {}
-    for i, v in enumerate(lines):
-        val = v[col]
+    for i, line in line_dict.items():
+        val = line[col]
         if not val in citems: citems[val] = [i + offset]
         else: citems[val].append(i + offset)
     return citems
@@ -539,6 +824,7 @@ def plot_u_ave(
     lbl = {},                # Labels used to mark on the diagonal
     lbl_fontsize = 8,        # Fontsize for label
     xrange = ("*", "*"),
+    xstep  = 0,
     yrange = ("*", "*"),
     width         = 5,       # inch
     height        = 1.5,     # inch
@@ -600,7 +886,7 @@ def plot_u_ave(
     intst_column_mean_max = np.max( [np.nanmax(column_mean_dmat), 0] )
 
     # Filename to export...
-    fl_export = os.path.join(fl_path, f"ave.{rank:02d}.{fl_postfix}")
+    fl_export = os.path.join(fl_path, f"ave.{rank:02d}{fl_postfix}")
 
     # Begin Gnuplot
     gp = GnuplotPy3.GnuplotPy3()
@@ -625,6 +911,17 @@ def plot_u_ave(
 
     if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth 1.0 linecolor rgb 'black'")
 
+    gp(f"set xlabel 'seqi'")
+    gp(f"set xtic nomirror")
+
+    if xrange != ("*", "*"):
+        b, e = int(xrange[0]), int(xrange[1])
+        if not xstep: print(f"!!! xstep must be larger than 0, labeling has failed.")
+        else:
+            x2l = [ f"'{ i // 4 }_{ i % 4 }' {i}" for i in range(int(b), int(e) + 1, xstep) ]
+            cmd_x2l = ', '.join(x2l)
+            gp(f"set x2tics ({cmd_x2l}) rotate by 90 right")
+
     for cmd in cmds_lbl_top:
         gp(cmd)
 
@@ -635,6 +932,154 @@ def plot_u_ave(
     for i,v in enumerate(column_mean_dmat):
         gp(f"{i} {v}")
     gp("e")
+
+    gp("exit")
+
+    return None
+
+
+
+
+def plot_rmsd_ave(
+    rmsd_dmat,                    # Input data, which is a distance matrix
+    lbl = {},                # Labels used to mark on the diagonal
+    lbl_fontsize = 8,        # Fontsize for label
+    pop_bin_cap = None,
+    fwk_mid = None,
+    fwk_tol = 0.1,
+    fwk_minsize = 10,
+    fwk_linewidth = 2,
+    xrange = ("*", "*"),
+    xstep  = 0,
+    yrange = ("*", "*"),
+    width         = 5,       # inch
+    height        = 1.5,     # inch
+    fontsize      = 14,      # pt
+    linewidth     = 1.0,     # pt
+    intst_min     = "0",     # Min intensity value
+    intst_max     = "*",     # Max intensity value
+    showzero      = True,
+    fl_path       = '.',
+    fl_postfix      = '',
+    cmds          = [],
+    ):
+
+    # Get the mean...
+    column_mean_rmsd_dmat = np.nanmean(rmsd_dmat, axis = 0, keepdims = False)
+
+    # Draw lbl (optional)...
+    cmds_lbl_top = [""]
+    cmds_lbl_bottom = [""]
+    color_lbl = '#BBBBBB'
+    if len(lbl) > 0: 
+        for k, (b,e) in lbl.items():
+            # Vertical lines (beginning of a region)
+            cmd = f"set arrow front from {b},graph 0 to {b},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+            cmds_lbl_top.append(cmd)
+
+            # Vertical lines (end of a region)
+            cmd = f"set arrow front from {e},graph 0 to {e},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+            cmds_lbl_top.append(cmd)
+
+            # Horizontal lines (beginning of a region)
+            cmd = f"set arrow front from graph 0,first {b} to graph 1,first {b} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+
+            # Horizontal lines (end of a region)
+            cmd = f"set arrow front from graph 0,first {e} to graph 1,first {e} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmds_lbl_bottom.append(cmd)
+
+            # Put labels on the diagonal...
+            lbl[k] = (b + e) // 2
+
+    # [[[ VISUALIZE ]]]
+    num_items = len(rmsd_dmat)
+    if intst_max == "*":
+        intst_min = np.nanmin(rmsd_dmat)
+        intst_max = np.nanmax(rmsd_dmat)
+    intst_column_mean_min = np.min( [np.nanmin(column_mean_rmsd_dmat), 0] )
+    intst_column_mean_max = np.max( [np.nanmax(column_mean_rmsd_dmat), 0] )
+
+    # Filename to export...
+    fl_export = os.path.join(fl_path, f"ave.rmsd")
+
+
+    # [[[ RIGID FRAMEWORK ]]]
+    # Get the population density of all rmsd...
+    if not pop_bin_cap is None:
+        bin_val, bin_edge = pr.utils.population_density(column_mean_rmsd_dmat, bin_cap = pop_bin_cap)
+        idx_bin_val_max = bin_val.index(max(bin_val))
+        bin_edge_at_max = bin_edge[idx_bin_val_max]
+
+        print(f"The most frequent RMSD value occurs at {bin_edge_at_max}")
+
+    # Rigid framework...
+    rigid_fwks = []
+    if not fwk_mid is None:
+        vmin, vmax = fwk_mid - fwk_tol, fwk_mid + fwk_tol
+        cond = np.logical_and( vmin < column_mean_rmsd_dmat, column_mean_rmsd_dmat <  vmax )
+
+        rigid_fwk_idx = np.argwhere(cond).reshape(-1)
+        rigid_fwk_raw = pr.utils.group_consecutive_integer(rigid_fwk_idx)
+        rigid_fwks = [ i for i in rigid_fwk_raw if len(i) > fwk_minsize ]
+
+
+    # Begin Gnuplot
+    gp = GnuplotPy3.GnuplotPy3()
+    gp(f"set terminal postscript eps  size {width}, {height} \\")
+    gp(f"                             enhanced color \\")
+    gp(f"                             font 'Helvetica,{fontsize}' \\")
+    gp(f"                             linewidth {linewidth}")
+
+    # Declare the filename to export...
+    gp(f"set output '{fl_export}.eps'")
+    gp("unset key")
+
+    gp(f"set xrange [-1:{num_items}]")
+    gp(f"set yrange [{intst_column_mean_min}:{intst_column_mean_max}]")
+    gp(f"set border linewidth {linewidth}")
+
+    if xrange != ("*", "*"): gp(f"set xrange [{xrange[0]}:{xrange[1]}]")
+    if yrange != ("*", "*"): gp(f"set yrange [{yrange[0]}:{yrange[1]}]")
+
+    for k, x in lbl.items():
+        gp(f"set label '{k}' at {x},graph 0.9 left rotate by 90 font ', {lbl_fontsize}' front")
+
+    if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth 1.0 linecolor rgb 'black'")
+
+    gp(f"set xlabel 'seqi'")
+    gp(f"set xtic nomirror")
+
+    if xrange != ("*", "*"):
+        b, e = int(xrange[0]), int(xrange[1])
+        if not xstep: print(f"!!! xstep must be larger than 0, labeling has failed.")
+        else:
+            x2l = [ f"'{ i // 4 }_{ i % 4 }' {i}" for i in range(int(b), int(e) + 1, xstep) ]
+            cmd_x2l = ', '.join(x2l)
+            gp(f"set x2tics ({cmd_x2l}) rotate by 90 right")
+
+    for cmd in cmds_lbl_top:
+        gp(cmd)
+
+    for cmd in cmds:
+        gp(cmd)
+
+    gp(f"plot \\")
+    gp(f"'-' using 1:2 with lines linewidth {linewidth} linecolor rgb 'black' title 'Column mean', \\")
+    if len(rigid_fwks): gp(f"'-' using 1:2 with lines linewidth {fwk_linewidth} linecolor rgb 'green' title 'Framework', \\")
+    gp("")
+    for i,v in enumerate(column_mean_rmsd_dmat):
+        gp(f"{i} {v}")
+    gp("e")
+
+    for fwk in rigid_fwks:
+        for i in fwk:
+            v = column_mean_rmsd_dmat[i]
+            gp(f"{i} {v}")
+        gp(" ")
+    if len(rigid_fwks): gp("e")
 
     gp("exit")
 

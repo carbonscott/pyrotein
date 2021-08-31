@@ -4,7 +4,7 @@
 import os
 import numpy as np
 import pyrotein as pr
-from display import plot_dmat
+from display import plot_rmsd_dmat
 import pprint
 
 # Set job name...
@@ -34,16 +34,21 @@ labels = {'H8': [620, 633],
           'TM7': [584, 612]}
 for k, v in labels.items(): labels[k] = [ (i) * len_res for i in v ]
 
-plot_dmat( rmsd_dmat, 
-           fl_rmsd_dmat, 
-           lbl = labels,
-           width = 10,
-           height = 12,
-           fontsize = 29,
-           lbl_fontsize = 29,
-           linewidth = 1.0,
-           palette = pal,
-           intst_max = "*",
-         )
-
+plot_rmsd_dmat( rmsd_dmat, 
+                fl_rmsd_dmat, 
+                pop_bin_cap = 50,
+                fwk_mid = 2.072870590257889,
+                fwk_tol = 0.5,
+                fwk_minsize = 10,
+                fwk_linewidth = 3,
+                curve_linewidth = 3,
+                lbl = labels,
+                width = 10,
+                height = 12,
+                fontsize = 29,
+                lbl_fontsize = 29,
+                linewidth = 1.0,
+                palette = pal,
+                intst_max = "*",
+              )
 
