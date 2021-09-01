@@ -325,11 +325,12 @@ def plot_rmsd_dmat(
         rigid_fwks = [ i for i in rigid_fwk_raw if len(i) > fwk_minsize ]
 
         mean_fwk = np.mean(np.take(column_mean_dmat, [ i for j in rigid_fwks for i in j ]))
-        print(f"The mean RMSD is {mean_fwk}.")
+        print(f"The mean RMSD is {mean_fwk}. The intervals are listed below: ")
 
         for i in range(len(rigid_fwks)):
             cmd = []
             b1, e1 = [ rigid_fwks[i][0], rigid_fwks[i][-1] ]
+            print(f"{b1} {e1}")
             cmd.append(f"set object rectangle front from {b1},{e1} to {e1},{b1} fs empty border linecolor rgb 'black'")
             for j in range(i + 1, len(rigid_fwks)):
                 b2, e2 = [ rigid_fwks[j][0], rigid_fwks[j][-1] ]
