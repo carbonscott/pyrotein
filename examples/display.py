@@ -14,12 +14,14 @@ def plot_dmat(
     fl_dmat,                 # Filename of the exported file
     lbl = {},                # Labels used to mark on the diagonal
     lbl_fontsize = 8,        # Fontsize for label
+    lbl_linewidth = 1.0,     # pt
     diaglbl       = {},      # diagonal label (usually for showing index)
     diaglblfontsize = 5,
     width         = 6,       # inch
     height        = 7,       # inch
     fontsize      = 14,      # pt
     linewidth     = 1.0,     # pt
+    curve_linewidth = 1.0,     # pt
     palette       = "",      # Palette definition
     intst_min     = "0",     # Min intensity value
     intst_max     = "*",     # Max intensity value
@@ -46,28 +48,29 @@ def plot_dmat(
     cmds_lbl_top = [""]
     cmds_lbl_bottom = [""]
     color_lbl = '#BBBBBB'
+    _lbl = {}
     if len(lbl) > 0: 
         for k, (b,e) in lbl.items():
             # Vertical lines (beginning of a region)
-            cmd = f"set arrow front from {b},graph 0 to {b},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmd = f"set arrow front from {b},graph 0 to {b},graph 1 nohead dashtype 2 linewidth {lbl_linewidth} linecolor rgb '{color_lbl}'"
             cmds_lbl_bottom.append(cmd)
             cmds_lbl_top.append(cmd)
 
             # Vertical lines (end of a region)
-            cmd = f"set arrow front from {e},graph 0 to {e},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmd = f"set arrow front from {e},graph 0 to {e},graph 1 nohead dashtype 2 linewidth {lbl_linewidth} linecolor rgb '{color_lbl}'"
             cmds_lbl_bottom.append(cmd)
             cmds_lbl_top.append(cmd)
 
             # Horizontal lines (beginning of a region)
-            cmd = f"set arrow front from graph 0,first {b} to graph 1,first {b} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmd = f"set arrow front from graph 0,first {b} to graph 1,first {b} nohead dashtype 2 linewidth {lbl_linewidth} linecolor rgb '{color_lbl}'"
             cmds_lbl_bottom.append(cmd)
 
             # Horizontal lines (end of a region)
-            cmd = f"set arrow front from graph 0,first {e} to graph 1,first {e} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
+            cmd = f"set arrow front from graph 0,first {e} to graph 1,first {e} nohead dashtype 2 linewidth {lbl_linewidth} linecolor rgb '{color_lbl}'"
             cmds_lbl_bottom.append(cmd)
 
             # Put labels on the diagonal...
-            lbl[k] = [ (b + e) // 2, (b + e) // 2  ]
+            _lbl[k] = [ (b + e) // 2, (b + e) // 2  ]
 
     # [[[ Visualize ]]]
     num_items = len(dmat)
@@ -138,12 +141,12 @@ def plot_dmat(
         gp(cmd)
 
     if mode == "pm3d":
-        gp(f"splot '-' using 1:2:3 with lines linewidth {linewidth} linecolor rgb 'black' title 'Column mean'")
+        gp(f"splot '-' using 1:2:3 with lines linewidth {curve_linewidth} linecolor rgb 'black' title 'Column mean'")
         for i,v in enumerate(column_mean_dmat):
             gp(f"{i} {v} 0")
         gp("e")
     else:
-        gp(f"plot '-' using 1:2 with lines linewidth {linewidth} linecolor rgb 'black' title 'Column mean'")
+        gp(f"plot '-' using 1:2 with lines linewidth {curve_linewidth} linecolor rgb 'black' title 'Column mean'")
         for i,v in enumerate(column_mean_dmat):
             gp(f"{i} {v}")
         gp("e")
@@ -172,7 +175,7 @@ def plot_dmat(
     gp(f"set yrange [{num_items}   :-1          ]")
     gp(f"set border linewidth {linewidth}")
 
-    for k, (x, y) in lbl.items():
+    for k, (x, y) in _lbl.items():
         gp(f"set label '{k}' at {x},{y} left rotate by 45 font ', {lbl_fontsize}' front")
 
     for k, (x, y) in diaglbl.items():
