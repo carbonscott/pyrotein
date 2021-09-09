@@ -39,7 +39,7 @@ def bin_image(img_orig, binning = 4, mode = 1, nan_replace = 0):
 
 
 
-def read_file(file, numerical = False, labelcolumn = -1):
+def read_file(file, str_to_num = False, num_type = float, labelcolumn = -1):
     '''Return all lines in the user supplied parameter file without comments.
     '''
     lines = []
@@ -52,8 +52,8 @@ def read_file(file, numerical = False, labelcolumn = -1):
             if "#" in words: words = words[  : words.index("#")]
 
             # Save non-empty line...
-            if numerical: 
-                words[labelcolumn + 1:] = [ float(word) for word in words[labelcolumn + 1:] ]
+            if str_to_num: 
+                words[labelcolumn + 1:] = [ num_type(word) for word in words[labelcolumn + 1:] ]
             if len(words) > 0: lines.append(words)
 
     return lines
@@ -320,3 +320,18 @@ def sort_dict_by_key(_dict):
 
 
 
+def sqeeze_seqi(lbl):
+    ''' I know it's a terrible name.
+        It turns things like this 
+        [0, 33], [63, 95] -> 
+        [0, 33], [34, 66]
+    '''
+    len_dict = { k : e - b for k, (b, e) in sorted(labels.items(), key = lambda x: [1][0]) }
+
+    i_end = 0
+    sqeezed_lbl = {}
+    for k, l in len_dict.items():
+        sqeezed_lbl[k] = [ i_end, i_end + l ]
+        i_end += l+1
+
+    return sqeezed_lbl
