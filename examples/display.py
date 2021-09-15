@@ -10,30 +10,31 @@ import tempfile
 
 
 def plot_dmat(
-    dmat,                    # Input data, which is a distance matrix
-    fl_dmat,                 # Filename of the exported file
-    lbl = {},                # Labels used to mark on the diagonal
-    lbl_fontsize = 8,        # Fontsize for label
-    lbl_linewidth = 1.0,     # pt
-    diaglbl       = {},      # diagonal label (usually for showing index)
+    dmat,                          # Input data, which is a distance matrix
+    fl_dmat,                       # Filename of the exported file
+    lbl             = {},          # Labels used to mark on the diagonal
+    lbl_fontsize    = 8,           # Fontsize for label
+    lbl_linewidth   = 1.0,         # pt
+    diaglbl         = {},          # diagonal label (usually for showing index)
     diaglblfontsize = 5,
-    width         = 6,       # inch
-    height        = 7,       # inch
-    fontsize      = 14,      # pt
-    linewidth     = 1.0,     # pt
-    curve_linewidth = 1.0,     # pt
-    palette       = "",      # Palette definition
-    intst_min     = "0",     # Min intensity value
-    intst_max     = "*",     # Max intensity value
-    vrange        = [],
-    showzero      = True,
-    showcolorbox  = True,
-    NaN           = "NaN",
-    temp          = True,
-    mode          = "image", # "image", "sparse", "pm3d"
+    width           = 6,           # inch
+    height          = 7,           # inch
+    fontsize        = 14,          # pt
+    linewidth       = 1.0,         # pt
+    curve_linewidth = 1.0,         # pt
+    palette         = "",          # Palette definition
+    intst_min       = "0",         # Min intensity value
+    intst_max       = "*",         # Max intensity value
+    vrange          = [],
+    showzero        = True,
+    showcolorbox    = True,
+    NaN             = "NaN",
+    temp            = True,
+    mode            = "image",     # "image", "sparse", "pm3d"
     showsparselabel = False,
-    cmds_top      = [],      # Customized command for upper panel
-    cmds_bottom   = [],      # Customized command for bottom panel
+    box_range       = [],          # If box range is empty, then the box covers the whole area of u
+    cmds_top        = [],          # Customized command for upper panel
+    cmds_bottom     = [],          # Customized command for bottom panel
     ):
     assert len(vrange) == 0 or len(vrange) == 2, "vrange has to be an empty or 2-member tuple.  "
 
@@ -41,8 +42,25 @@ def plot_dmat(
     range_default = ("*", "*")
     if len(vrange) == 2: fl_dmat = f"{fl_dmat}.zoom"
 
+    title = f"Column mean"
+    cmd_box = [""]
+    if len(box_range):
+        # Right-inclusion is considered [debating if this should be done]
+        b, e = box_range
+        # Horizontal lines (beginning of a region)
+        cmd = f"set arrow front from graph 0,first {b} to graph 1,first {b} nohead dashtype 2 linewidth {lbl_linewidth} linecolor rgb 'black'"
+        cmd_box.append(cmd)
+
+        # Horizontal lines (end of a region)
+        cmd = f"set arrow front from graph 0,first {e} to graph 1,first {e} nohead dashtype 2 linewidth {lbl_linewidth} linecolor rgb 'black'"
+        cmd_box.append(cmd)
+
+        title += " (in box)"
+    else:
+        b, e = 0, len(dmat)
+
     # Get the mean...
-    column_mean_dmat = np.nanmean(dmat, axis = 0, keepdims = False)
+    column_mean_dmat = np.nanmean(dmat[b:e, :], axis = 0, keepdims = False)
 
     # Draw lbl (optional)...
     cmds_lbl_top = [""]
@@ -134,19 +152,17 @@ def plot_dmat(
 
     if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth 1.0 linecolor rgb 'black'")
 
-    for cmd in cmds_lbl_top:
-        gp(cmd)
+    for cmd in cmds_lbl_top: gp(cmd)
 
-    for cmd in cmds_top:
-        gp(cmd)
+    for cmd in cmds_top: gp(cmd)
 
     if mode == "pm3d":
-        gp(f"splot '-' using 1:2:3 with lines linewidth {curve_linewidth} linecolor rgb 'black' title 'Column mean'")
+        gp(f"splot '-' using 1:2:3 with lines linewidth {curve_linewidth} linecolor rgb 'black' title '{title}'")
         for i,v in enumerate(column_mean_dmat):
             gp(f"{i} {v} 0")
         gp("e")
     else:
-        gp(f"plot '-' using 1:2 with lines linewidth {curve_linewidth} linecolor rgb 'black' title 'Column mean'")
+        gp(f"plot '-' using 1:2 with lines linewidth {curve_linewidth} linecolor rgb 'black' title '{title}'")
         for i,v in enumerate(column_mean_dmat):
             gp(f"{i} {v}")
         gp("e")
@@ -189,11 +205,11 @@ def plot_dmat(
     gp(f"set cbtics font ',{lbl_fontsize}'")
     if not showcolorbox: gp(f"unset colorbox")
 
-    for cmd in cmds_lbl_bottom:
-        gp(cmd)
+    for cmd in cmds_lbl_bottom: gp(cmd)
 
-    for cmd in cmds_bottom:
-        gp(cmd)
+    for cmd in cmds_bottom: gp(cmd)
+
+    for cmd in cmd_box: gp(cmd)
 
     if mode == 'sparse':
         gp("plot \\")
@@ -215,6 +231,107 @@ def plot_dmat(
 
 
 
+def calc_rigid_framework(rmsd_dmat, seqi_fwk_list, num_seq, len_res, min_size = 5, min_mean = 0.1, epsilon = 0.00001):
+    ''' The idea of rigid framework is taken from DOI: 10.1371/journal.pone.0077363 .
+
+        Basically, every residue should be assigned to either "rigid" or "not
+        rigid".  The change of mean value of the submatrix upon the selection or
+        deselection of a residue would determine the assignment.  If the change of
+        mean is larger than a threshold, the choice (either select or not) should 
+        not be made.  Check residues in both frameworks.  
+
+        idx in rigid fwk, should it be deselected?
+        idx not in rigid fwk, should it be selected?
+    '''
+    atom_list_orig = [ i for b, e in seqi_fwk_list for i in range(b * len_res, e * len_res) ]
+
+    # Calculate the mean of submatrix upon the choice of rigid fwk from input...
+    def calc_submean(rmsd_dmat, atom_list_orig):
+        rmsd_dmat_sub_aux_orig  = np.take(rmsd_dmat, atom_list_orig, axis = 1)
+        rmsd_dmat_sub_orig      = np.take(rmsd_dmat_sub_aux_orig, atom_list_orig, axis = 0)
+        mean_rmsd_dmat_sub_orig = np.nanmean(rmsd_dmat_sub_orig, keepdims = False)
+        return mean_rmsd_dmat_sub_orig
+
+    mean_rmsd_dmat_sub_orig = calc_submean(rmsd_dmat, atom_list_orig)
+    print(f"RMSD (Init): {mean_rmsd_dmat_sub_orig}")
+
+    # Fetch index of framework-wise np.nan...
+    mean_rmsd_dmat_orig = np.nanmean(rmsd_dmat, axis = 0, keepdims = False)
+    mean_rmsd_dmat_orig[np.isnan(mean_rmsd_dmat_orig)] = 0.0
+    nan_list = np.argwhere(mean_rmsd_dmat_orig < min_mean).reshape(-1)
+
+    # Inspect every residue (col) represented by seqi...
+    # Easier to operate on atom list, this is a adhoc code anyway
+    # - idx in rigid fwk, should it be deselected?
+    # - idx not in rigid fwk, should it be selected?
+    rm_list  = []
+    add_list = []
+    for seqi in range(num_seq):
+        # Infer atomi from seqi by a scale of len_res...
+        atomi = seqi * len_res
+
+        # If this residue is rigid???
+        if atomi in atom_list_orig:
+            # Remove nan column...
+            if atomi in nan_list:
+                rm_list.append(atomi)
+                continue
+
+            atom_list_aux = atom_list_orig.copy()
+
+            # Remove the associated atoms...
+            for i in range(len_res): atom_list_aux.remove(atomi + i)
+
+            # Calcualte the new mean rmsd...
+            mean_rmsd_dmat_sub_aux = calc_submean(rmsd_dmat, atom_list_aux)
+
+            # Consider NOT to keep it if it's larger than 1% of decrease???
+            if mean_rmsd_dmat_sub_aux > (1 - epsilon) * mean_rmsd_dmat_sub_orig: continue
+
+            rm_list.append(atomi)
+
+        # Or this residue is not rigid???
+        else:
+            # Don't consider nan...
+            if atomi in nan_list: continue
+
+            atom_list_aux = atom_list_orig.copy()
+
+            # Remove the associated atoms...
+            for i in range(len_res): atom_list_aux.append(atomi + i)
+
+            # Calcualte the new mean rmsd...
+            mean_rmsd_dmat_sub_aux = calc_submean(rmsd_dmat, atom_list_aux)
+
+            # Consider NOT to keep it if it's larger than 1% of increase???
+            if mean_rmsd_dmat_sub_aux > (1 + epsilon) * mean_rmsd_dmat_sub_orig: continue
+
+            add_list.append(atomi)
+
+    # Remove atoms that was considered rigid...
+    for atomi in rm_list:
+        # Remove the associated atoms...
+        for i in range(len_res): atom_list_orig.remove(atomi + i)
+
+    # Add atoms that was considered not rigid...
+    for atomi in add_list:
+        # Remove the associated atoms...
+        for i in range(len_res): atom_list_orig.append(atomi + i)
+
+    atom_list_orig.sort()
+    fwk_list = pr.utils.group_consecutive_integer(atom_list_orig)
+    fwk_list = [ i for i in fwk_list if i[-1] - i[0] + 1 >= min_size * len_res ]
+    atom_list_orig = [ i for fwk in fwk_list for i in fwk ]
+
+    mean_rmsd_dmat_sub_orig = calc_submean(rmsd_dmat, atom_list_orig)
+    print(f"RMSD (Final): {mean_rmsd_dmat_sub_orig}")
+
+    ## return [ i for i in fwk_list if i[-1] - i[0] + 1 >= min_size * len_res ]
+    return fwk_list
+
+
+
+
 def plot_rmsd_dmat(
     dmat,                    # Input data, which is a distance matrix
     fl_dmat,                 # Filename of the exported file
@@ -222,10 +339,7 @@ def plot_rmsd_dmat(
     lbl_fontsize = 8,        # Fontsize for label
     diaglbl       = {},      # diagonal label (usually for showing index)
     diaglblfontsize = 5,
-    pop_bin_cap = None,      # Plot framework
-    fwk_mid = None,
-    fwk_tol = 0.1,
-    fwk_minsize = 10,
+    fwk_list = [],
     fwk_linewidth = 2,
     fwk_curve_color = "black",
     fwk_box_color = "black",
@@ -309,36 +423,16 @@ def plot_rmsd_dmat(
 
 
     # [[[ RIGID FRAMEWORK ]]]
-    # Get the population density of all rmsd...
-    if not pop_bin_cap is None:
-        bin_val, bin_edge = pr.utils.population_density(column_mean_dmat, bin_cap = pop_bin_cap)
-        idx_bin_val_max = bin_val.index(max(bin_val))
-        bin_edge_at_max = bin_edge[idx_bin_val_max]
-
-        print(f"The most frequent RMSD value occurs at {bin_edge_at_max}")
-
-    # Rigid framework...
-    rigid_fwks = []
-    if not fwk_mid is None:
-        vmin, vmax = fwk_mid - fwk_tol, fwk_mid + fwk_tol
-        cond = np.logical_and( vmin < column_mean_dmat, column_mean_dmat <  vmax )
-
-        rigid_fwk_idx = np.argwhere(cond).reshape(-1)
-        rigid_fwk_raw = pr.utils.group_consecutive_integer(rigid_fwk_idx)
-        rigid_fwks = [ i for i in rigid_fwk_raw if len(i) > fwk_minsize ]
-
-        mean_fwk = np.mean(np.take(column_mean_dmat, [ i for j in rigid_fwks for i in j ]))
-        print(f"The mean RMSD is {mean_fwk}. The intervals are listed below: ")
-
-        for i in range(len(rigid_fwks)):
-            cmd = []
-            b1, e1 = [ rigid_fwks[i][0], rigid_fwks[i][-1] ]
-            print(f"{b1} {e1}")
-            cmd.append(f"set object rectangle front from {b1},{e1} to {e1},{b1} fs empty border linecolor rgb 'black'")
-            for j in range(i + 1, len(rigid_fwks)):
-                b2, e2 = [ rigid_fwks[j][0], rigid_fwks[j][-1] ]
-                cmd.append(f"set object rectangle front from {b1},{b2} to {e1},{e2} fs empty linecolor rgb '{fwk_box_color}'")
-            cmds_bottom.extend(cmd)
+    for i in range(len(fwk_list)):
+        cmd = []
+        b1, e1 = [ fwk_list[i][0], fwk_list[i][-1] ]
+        print(f"{b1//4} {e1//4}")
+        cmd.append(f"set object rectangle front from {b1},{e1} to {e1},{b1} fs empty border linecolor rgb 'black'")
+        for j in range(i + 1, len(fwk_list)):
+            b2, e2 = [ fwk_list[j][0], fwk_list[j][-1] ]
+            cmd.append(f"set object rectangle front from {b1},{b2} to {e1},{e2} fs empty linecolor rgb '{fwk_box_color}'")
+            cmd.append(f"set object rectangle front from {b2},{b1} to {e2},{e1} fs empty linecolor rgb '{fwk_box_color}'")
+        cmds_bottom.extend(cmd)
 
 
     # Begin Gnuplot
@@ -391,35 +485,35 @@ def plot_rmsd_dmat(
     if mode == "pm3d":
         gp(f"splot \\")
         gp(f"'-' using 1:2:3 with lines linewidth {curve_linewidth} linecolor rgb '{curve_color}' title 'Column mean', \\")
-        if len(rigid_fwks): gp(f"'-' using 1:2:3 with lines linewidth {fwk_linewidth} linecolor rgb '{fwk_curve_color}' notitle, \\")
+        if len(fwk_list): gp(f"'-' using 1:2:3 with lines linewidth {fwk_linewidth} linecolor rgb '{fwk_curve_color}' notitle, \\")
         gp(f"")
 
         for i,v in enumerate(column_mean_dmat):
             gp(f"{i} {v} 0")
         gp("e")
 
-        for fwk in rigid_fwks:
+        for fwk in fwk_list:
             for i in fwk:
                 v = column_mean_dmat[i]
                 gp(f"{i} {v}")
             gp(" ")
-        if len(rigid_fwks): gp("e")
+        if len(fwk_list): gp("e")
     else:
         gp(f"plot \\")
         gp(f"'-' using 1:2 with lines linewidth {curve_linewidth} linecolor rgb '{curve_color}' title 'Column mean', \\")
-        if len(rigid_fwks): gp(f"'-' using 1:2 with lines linewidth {fwk_linewidth} linecolor rgb '{fwk_curve_color}' notitle, \\")
+        if len(fwk_list): gp(f"'-' using 1:2 with lines linewidth {fwk_linewidth} linecolor rgb '{fwk_curve_color}' notitle, \\")
         gp("")
 
         for i,v in enumerate(column_mean_dmat):
             gp(f"{i} {v}")
         gp("e")
 
-        for fwk in rigid_fwks:
+        for fwk in fwk_list:
             for i in fwk:
                 v = column_mean_dmat[i]
                 gp(f"{i} {v}")
             gp(" ")
-        if len(rigid_fwks): gp("e")
+        if len(fwk_list): gp("e")
 
 
     # PLOT 2: distance matrix...
@@ -562,6 +656,7 @@ def plot_left_singular(u, rank, length_mat,
                                 temp            = True,
                                 showsparselabel = False,
                                 mode            = 'image',
+                                box_range       = [],
                                 index_from_zero = True):
     ''' Plot left singular value as a lower triangular distance matrix.
     '''
@@ -582,6 +677,7 @@ def plot_left_singular(u, rank, length_mat,
                   1 'white'  , 5 'blue', 10 'navy')"
 
     # Filename to export...
+    if len(box_range): fl_postfix += ".box"
     fl_export = os.path.join(fl_path, f"u{rank:02d}" + fl_postfix)
 
     # Bin image???
@@ -612,6 +708,9 @@ def plot_left_singular(u, rank, length_mat,
               vrange          = vrange,
               temp            = temp,
               showsparselabel = showsparselabel,
+              box_range       = box_range,
+              cmds_top        = cmds_top,
+              cmds_bottom     = cmds_bottom,
               mode            = mode,)
 
     return None
@@ -635,6 +734,7 @@ def plot_coeff(c, rank1, rank2, lbl = {},
                                 pointsize = 1.0,
                                 fl_path = '.', 
                                 fl_postfix = '',
+                                is_rug = False,
                                 index_from_zero = True,
                                 cmds = []):
     ''' Scatter plot of examples from 2 dimensions specified by rank1 and rank2.
@@ -653,29 +753,34 @@ def plot_coeff(c, rank1, rank2, lbl = {},
         gp(f"                             linewidth {linewidth}")
         gp(f"set encoding utf8")
 
+        # Keep the scale on both direction the same...
+
         # Declare the filename to export...
         fl_name = f"coeff_{rank1:02d}vs{rank2:02d}" + fl_postfix
         fl_out = os.path.join(fl_path, fl_name)
-
-        ## # Zoom???
-        ## range_default = ("*", "*")
-        ## if xrange != range_default  or \
-        ##    yrange != range_default: fl_out = f"{fl_out}.zoom"
-
-        ## # Label???
-        ## if not label: fl_out = f"{fl_out}.nolabel"
 
         # Decide the final filename
         gp(f"set output '{fl_out}.eps'")
         gp("unset key")
 
         gp(f"set xrange [{xrange[0]}:{xrange[1]}]")
+        gp(f"set x2range [{xrange[0]}:{xrange[1]}]")    # To facilitate rug plot
         gp(f"set yrange [{yrange[0]}:{yrange[1]}]")
+        gp(f"set y2range [{yrange[0]}:{yrange[1]}]")
+        gp(f"set format x '%.1f'")
+        gp(f"set format y '%.1f'")
 
         gp(f"set xlabel 'c_{{{rank1:d}}} (\305)'")
         gp(f"set ylabel 'c_{{{rank2:d}}} (\305)'")
-        gp("set size 1.0,1.0")
-        ## gp("set size ratio -1")
+
+        # Rug plot
+        if is_rug:
+            # Set up tics for rug plot...
+            gp("set xtics nomirror")
+            gp("set ytics nomirror")
+            gp("set x2tics scale 1")
+            gp("set y2tics scale 1")
+            ## gp("set border lw 0.25")
 
         for cmd in cmds:
             gp(cmd)
@@ -689,6 +794,12 @@ def plot_coeff(c, rank1, rank2, lbl = {},
 
         # Join dots???
         if bool(join_dict): gp(" '-' using 1:2 with lines linewidth 1.0 linecolor rgb 'gray', \\")
+
+        if is_rug: 
+            # Add rug plot...
+            for k, v in lbl.items(): 
+                gp(" '-' using 1:2:x2tic(''):y2tic('') with points pointsize 0 linewidth 0 notitle, \\")
+                gp(" '-' using 1:2:x2tic(''):y2tic('') with points pointsize 0 linewidth 0 notitle, \\")
 
         # End plot style
         gp("")
@@ -712,6 +823,16 @@ def plot_coeff(c, rank1, rank2, lbl = {},
                     gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]}")  
                 gp("")
             gp("e")
+
+        if is_rug:
+            # ...w/ rug plot
+            for k, v in lbl.items():
+                for i in v["entry"]:
+                    gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]}")
+                gp("e")
+                for i in v["entry"]:
+                    gp(f"{c[rank1_in_data, i]} {c[rank2_in_data,i]}")
+                gp("e")
 
         gp("exit")
     else:
@@ -936,154 +1057,6 @@ def plot_u_ave(
     for i,v in enumerate(column_mean_dmat):
         gp(f"{i} {v}")
     gp("e")
-
-    gp("exit")
-
-    return None
-
-
-
-
-def plot_rmsd_ave(
-    rmsd_dmat,                    # Input data, which is a distance matrix
-    lbl = {},                # Labels used to mark on the diagonal
-    lbl_fontsize = 8,        # Fontsize for label
-    pop_bin_cap = None,
-    fwk_mid = None,
-    fwk_tol = 0.1,
-    fwk_minsize = 10,
-    fwk_linewidth = 2,
-    xrange = ("*", "*"),
-    xstep  = 0,
-    yrange = ("*", "*"),
-    width         = 5,       # inch
-    height        = 1.5,     # inch
-    fontsize      = 14,      # pt
-    linewidth     = 1.0,     # pt
-    intst_min     = "0",     # Min intensity value
-    intst_max     = "*",     # Max intensity value
-    showzero      = True,
-    fl_path       = '.',
-    fl_postfix      = '',
-    cmds          = [],
-    ):
-
-    # Get the mean...
-    column_mean_rmsd_dmat = np.nanmean(rmsd_dmat, axis = 0, keepdims = False)
-
-    # Draw lbl (optional)...
-    cmds_lbl_top = [""]
-    cmds_lbl_bottom = [""]
-    color_lbl = '#BBBBBB'
-    if len(lbl) > 0: 
-        for k, (b,e) in lbl.items():
-            # Vertical lines (beginning of a region)
-            cmd = f"set arrow front from {b},graph 0 to {b},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
-            cmds_lbl_bottom.append(cmd)
-            cmds_lbl_top.append(cmd)
-
-            # Vertical lines (end of a region)
-            cmd = f"set arrow front from {e},graph 0 to {e},graph 1 nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
-            cmds_lbl_bottom.append(cmd)
-            cmds_lbl_top.append(cmd)
-
-            # Horizontal lines (beginning of a region)
-            cmd = f"set arrow front from graph 0,first {b} to graph 1,first {b} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
-            cmds_lbl_bottom.append(cmd)
-
-            # Horizontal lines (end of a region)
-            cmd = f"set arrow front from graph 0,first {e} to graph 1,first {e} nohead dashtype 2 linewidth {linewidth} linecolor rgb '{color_lbl}'"
-            cmds_lbl_bottom.append(cmd)
-
-            # Put labels on the diagonal...
-            lbl[k] = (b + e) // 2
-
-    # [[[ VISUALIZE ]]]
-    num_items = len(rmsd_dmat)
-    if intst_max == "*":
-        intst_min = np.nanmin(rmsd_dmat)
-        intst_max = np.nanmax(rmsd_dmat)
-    intst_column_mean_min = np.min( [np.nanmin(column_mean_rmsd_dmat), 0] )
-    intst_column_mean_max = np.max( [np.nanmax(column_mean_rmsd_dmat), 0] )
-
-    # Filename to export...
-    fl_export = os.path.join(fl_path, f"ave.rmsd")
-
-
-    # [[[ RIGID FRAMEWORK ]]]
-    # Get the population density of all rmsd...
-    if not pop_bin_cap is None:
-        bin_val, bin_edge = pr.utils.population_density(column_mean_rmsd_dmat, bin_cap = pop_bin_cap)
-        idx_bin_val_max = bin_val.index(max(bin_val))
-        bin_edge_at_max = bin_edge[idx_bin_val_max]
-
-        print(f"The most frequent RMSD value occurs at {bin_edge_at_max}")
-
-    # Rigid framework...
-    rigid_fwks = []
-    if not fwk_mid is None:
-        vmin, vmax = fwk_mid - fwk_tol, fwk_mid + fwk_tol
-        cond = np.logical_and( vmin < column_mean_rmsd_dmat, column_mean_rmsd_dmat <  vmax )
-
-        rigid_fwk_idx = np.argwhere(cond).reshape(-1)
-        rigid_fwk_raw = pr.utils.group_consecutive_integer(rigid_fwk_idx)
-        rigid_fwks = [ i for i in rigid_fwk_raw if len(i) > fwk_minsize ]
-
-
-    # Begin Gnuplot
-    gp = GnuplotPy3.GnuplotPy3()
-    gp(f"set terminal postscript eps  size {width}, {height} \\")
-    gp(f"                             enhanced color \\")
-    gp(f"                             font 'Helvetica,{fontsize}' \\")
-    gp(f"                             linewidth {linewidth}")
-
-    # Declare the filename to export...
-    gp(f"set output '{fl_export}.eps'")
-    gp("unset key")
-
-    gp(f"set xrange [-1:{num_items}]")
-    gp(f"set yrange [{intst_column_mean_min}:{intst_column_mean_max}]")
-    gp(f"set border linewidth {linewidth}")
-
-    if xrange != ("*", "*"): gp(f"set xrange [{xrange[0]}:{xrange[1]}]")
-    if yrange != ("*", "*"): gp(f"set yrange [{yrange[0]}:{yrange[1]}]")
-
-    for k, x in lbl.items():
-        gp(f"set label '{k}' at {x},graph 0.9 left rotate by 90 font ', {lbl_fontsize}' front")
-
-    if showzero: gp(f"set arrow front from graph 0, first 0 to graph 1, first 0 nohead dashtype 2 linewidth 1.0 linecolor rgb 'black'")
-
-    gp(f"set xlabel 'seqi'")
-    gp(f"set xtic nomirror")
-
-    if xrange != ("*", "*"):
-        b, e = int(xrange[0]), int(xrange[1])
-        if not xstep: print(f"!!! xstep must be larger than 0, labeling has failed.")
-        else:
-            x2l = [ f"'{ i // 4 }_{ i % 4 }' {i}" for i in range(int(b), int(e) + 1, xstep) ]
-            cmd_x2l = ', '.join(x2l)
-            gp(f"set x2tics ({cmd_x2l}) rotate by 90 right")
-
-    for cmd in cmds_lbl_top:
-        gp(cmd)
-
-    for cmd in cmds:
-        gp(cmd)
-
-    gp(f"plot \\")
-    gp(f"'-' using 1:2 with lines linewidth {linewidth} linecolor rgb 'black' title 'Column mean', \\")
-    if len(rigid_fwks): gp(f"'-' using 1:2 with lines linewidth {fwk_linewidth} linecolor rgb 'green' title 'Framework', \\")
-    gp("")
-    for i,v in enumerate(column_mean_rmsd_dmat):
-        gp(f"{i} {v}")
-    gp("e")
-
-    for fwk in rigid_fwks:
-        for i in fwk:
-            v = column_mean_rmsd_dmat[i]
-            gp(f"{i} {v}")
-        gp(" ")
-    if len(rigid_fwks): gp("e")
 
     gp("exit")
 
