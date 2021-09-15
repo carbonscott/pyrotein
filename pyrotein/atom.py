@@ -67,6 +67,25 @@ def read(file):
 
 
 
+def readonly(file):
+    ''' Extract atomic information for every atom and save them in tuples.  
+        Users are not encouraged to change values in the results returned.  
+    '''
+    lines = []
+    with open(file,'r') as fh:
+        for line in fh.readlines():
+            # Skip lines not starting with ATOM or HETATM...
+            rec_type = line[0:6].strip()
+            if not rec_type in "ATOM HETATM".split(): continue
+
+            # Split a line based on columns defined according to PDB format...
+            lines.append( tuple(split(line)) )
+
+    return tuple(lines)
+
+
+
+
 def spec():
     ''' Print out the PDB format formating rule.
     '''
