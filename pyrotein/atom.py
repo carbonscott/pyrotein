@@ -170,21 +170,21 @@ def filter_by_resn(chain_dict, resn):
 
 
 
-def resn_to_resi(chain_dict):
+def resi_to_resn(chain_dict):
     ''' Extract resn to resi mapping (like the sequence viewer on PyMol)
     '''
     aa_dict = { v : k for k, v in constant_aminoacid_code().items() }
 
-    resn_to_resi_dict = {}
+    resi_to_resn_dict = {}
     for resi, atom_dict in chain_dict.items():
         atom_first = list(atom_dict.keys())[0]
         resn = atom_dict[atom_first][4]
 
         if not resn in aa_dict: continue
-        resn_to_resi_dict[resi] = aa_dict[resn]
+        resi_to_resn_dict[resi] = aa_dict[resn]
 
-    resn_to_resi_dict = sort_dict_by_key(resn_to_resi_dict)
-    return resn_to_resi_dict
+    resi_to_resn_dict = sort_dict_by_key(resi_to_resn_dict)
+    return resi_to_resn_dict
 
 
 
@@ -192,7 +192,7 @@ def resn_to_resi(chain_dict):
 def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
     ''' Map seqi to resi for the sequence tar_seq bound by nseqi and cseqi.
 
-        resi is infered by resn_to_resi_dict.  
+        resi is infered by resi_to_resn_dict.  
 
         Key step is to recognize the lower bound resi that corresponds to
         nseqi.
@@ -202,7 +202,7 @@ def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
 
     # Extract resn to resi mapping (like the sequence viewer on PyMol)...
     # Non amino acid residue (like ligand) are bypassed
-    resn_to_resi_dict = resn_to_resi(chain_dict)
+    resi_to_resn_dict = resi_to_resn(chain_dict)
 
     # Select the bound sequence by nseqi and cseqi...
     tar_seq_bound           = tar_seq[nseqi : cseqi + 1]
@@ -210,7 +210,7 @@ def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
 
     # Obtain the original sequence from PDB...
     # May have overhead in the beginning or the end
-    seq_orig = ''.join([ v for v in resn_to_resi_dict.values() ])
+    seq_orig = ''.join([ v for v in resi_to_resn_dict.values() ])
 
     # Obtain the starting index by string match...
     lb_term = seq_orig.find(tar_seq_bound_continous)
@@ -227,7 +227,7 @@ def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
     ub_term = lb_term + len(tar_seq_bound_continous)
 
     # Obtain list of resi bound by nseqi and cseqi...
-    resi_list       = [ v for v in resn_to_resi_dict.keys() ]
+    resi_list       = [ v for v in resi_to_resn_dict.keys() ]
     resi_bound_list = resi_list[lb_term : ub_term]
 
     # Counter to go through the bound sequence by nseqi and cseqi...
