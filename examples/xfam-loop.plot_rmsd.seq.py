@@ -21,14 +21,14 @@ fl_rmsd_dmat  = f"{job_name}.rmsd"
 
 # Create labels...
 # +1 to make it a right-end closed
-labels = {'H8': [722, 734],
-          'TM1': [0, 33],
-          'TM2': [63, 95],
-          'TM3': [158, 193],
-          'TM4': [227, 253],
-          'TM5': [316, 356],
-          'TM6': [591, 630],
-          'TM7': [680, 707]}
+labels = {'H8': [722, 735],
+          'TM1': [0, 34],
+          'TM2': [63, 96],
+          'TM3': [158, 194],
+          'TM4': [227, 254],
+          'TM5': [316, 357],
+          'TM6': [591, 631],
+          'TM7': [680, 708]}
 # Increment the right index so that it is right-included
 for k, v in labels.items(): labels[k][1] += 1
 
@@ -57,5 +57,5 @@ plot_rmsd_dmat( rmsd_dmat,
                 lbl_fontsize = 29,
                 linewidth = 1.0,
                 palette = pal,
-                intst_max = "7",
+                intst_max = "*",
               )

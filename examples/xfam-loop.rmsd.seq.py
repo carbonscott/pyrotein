@@ -61,19 +61,19 @@ mask_loop = np.zeros((len_seq, len("xyz")), dtype = np.int8)
 
 # Use labels to create mask...
 # Notice the +1 for right-inclusion is removed
-labels = {'H8': [722, 734],
-          'TM1': [0, 33],
-          'TM2': [63, 95],
-          'TM3': [158, 193],
-          'TM4': [227, 253],
-          'TM5': [316, 356],
-          'TM6': [591, 630],
-          'TM7': [680, 707]}
+labels = {'H8': [722, 735],
+          'TM1': [0, 34],
+          'TM2': [63, 96],
+          'TM3': [158, 194],
+          'TM4': [227, 254],
+          'TM5': [316, 357],
+          'TM6': [591, 631],
+          'TM7': [680, 708]}
 for k, v in labels.items(): labels[k] = [ (i) * len_res for i in v ]
 
 # Create mask...
 # +1 offset is to deal with numpy indexing which is not right-inclusive 
-for _, (b, e) in labels.items(): mask_loop[b:e+1, :] = 1
+for _, (b, e) in labels.items(): mask_loop[b:e, :] = 1
 
 # [[[ PROCESS RMSD ]]]
 for i_fl, line in enumerate(lines[:]):
@@ -107,8 +107,6 @@ for i_fl, line in enumerate(lines[:]):
     # Calculate distance matrix...
     dmat = pr.distance.calc_dmat(xyzs, xyzs)
     dmats[i_fl, :] = pr.utils.mat2tril(dmat, offset = -1)
-
-stop
 
 # Replace np.nan with mean across samples...
 pr.utils.fill_nan_with_mean(dmats.T, axis = 1)
