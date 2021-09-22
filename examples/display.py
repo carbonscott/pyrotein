@@ -677,8 +677,10 @@ def plot_left_singular(u, rank, length_mat,
                   1 'white'  , 5 'blue', 10 'navy')"
 
     # Filename to export...
-    if len(box_range): fl_postfix += ".box"
-    fl_export = os.path.join(fl_path, f"u{rank:02d}" + fl_postfix)
+    fl_eps = f"u{rank:02d}"
+    if len(box_range): fl_eps += ".box"
+    fl_eps += fl_postfix
+    fl_export = os.path.join(fl_path, fl_eps)
 
     # Bin image???
     dmat_bin = dmat_full
