@@ -33,6 +33,7 @@ def plot_dmat(
     mode            = "image",     # "image", "sparse", "pm3d"
     showsparselabel = False,
     box_range       = [],          # If box range is empty, then the box covers the whole area of u
+    default_intst_rng = False,
     cmds_top        = [],          # Customized command for upper panel
     cmds_bottom     = [],          # Customized command for bottom panel
     ):
@@ -55,7 +56,7 @@ def plot_dmat(
         cmd = f"set arrow front from graph 0,first {e} to graph 1,first {e} nohead dashtype 2 linewidth {lbl_linewidth} linecolor rgb 'black'"
         cmd_box.append(cmd)
 
-        title += " (in box)"
+        title += " (within reference range)"
     else:
         b, e = 0, len(dmat)
 
@@ -142,10 +143,11 @@ def plot_dmat(
     gp("set size   1,0.15")
     gp("set tmargin 0")
     gp("set bmargin at screen 0.70")
-    gp("set lmargin at screen 0.10")
-    gp("set rmargin at screen 0.85")
+    gp("set lmargin at screen 0.05")
+    gp("set rmargin at screen 0.80")
     gp(f"set xrange [-1:{num_items}]")
-    gp(f"set yrange [{intst_column_mean_min}:{intst_column_mean_max}]")
+    gp(f"set yrange [{intst_column_mean_min}:{1.1 * intst_column_mean_max}]")
+    if not default_intst_rng: gp(f"set yrange [{intst_min}:{2.0 * intst_max}]")
     gp("set key top right")
     gp(f"set border linewidth {linewidth}")
     gp("set view map")
@@ -185,8 +187,8 @@ def plot_dmat(
     gp("set size   1.0,0.70")
     gp("set tmargin at screen 0.7")
     gp("set bmargin at screen 0.05")
-    gp("set lmargin at screen 0.10")
-    gp("set rmargin at screen 0.85")
+    gp("set lmargin at screen 0.05")
+    gp("set rmargin at screen 0.80")
     gp(f"set xrange [-1          :{num_items}   ]")
     gp(f"set yrange [{num_items}   :-1          ]")
     gp(f"set border linewidth {linewidth}")
@@ -655,6 +657,7 @@ def plot_left_singular(u, rank, length_mat,
                                 fl_postfix      = '',
                                 temp            = True,
                                 showsparselabel = False,
+                                default_intst_rng = False,
                                 mode            = 'image',
                                 box_range       = [],
                                 index_from_zero = True):
@@ -673,8 +676,13 @@ def plot_left_singular(u, rank, length_mat,
     # Colorscheme is inspired by [this paper](https://academic.oup.com/nar/article/44/15/7457/2457750)
     if palette is None:
         palette = "set palette defined \
-               (-10 '#800000', -5 'red', -1 'white', 0 'seagreen', \
-                  1 'white'  , 5 'blue', 10 'navy')"
+               (-10 '#800000', \
+                 -5 'red', \
+                 -1 'white', \
+                  0 'seagreen', \
+                  1 'white'  , \
+                  5 'blue', \
+                  10 'navy')"
 
     # Filename to export...
     fl_eps = f"u{rank:02d}"
@@ -710,6 +718,7 @@ def plot_left_singular(u, rank, length_mat,
               vrange          = vrange,
               temp            = temp,
               showsparselabel = showsparselabel,
+              default_intst_rng = default_intst_rng,
               box_range       = box_range,
               cmds_top        = cmds_top,
               cmds_bottom     = cmds_bottom,
@@ -734,6 +743,7 @@ def plot_coeff(c, rank1, rank2, lbl = {},
                                 lbl_fontsize = 4,
                                 linewidth = 1.0,
                                 pointsize = 1.0,
+                                precision = '%.1f',
                                 fl_path = '.', 
                                 fl_postfix = '',
                                 is_rug = False,
@@ -769,8 +779,8 @@ def plot_coeff(c, rank1, rank2, lbl = {},
         gp(f"set x2range [{xrange[0]}:{xrange[1]}]")    # To facilitate rug plot
         gp(f"set yrange [{yrange[0]}:{yrange[1]}]")
         gp(f"set y2range [{yrange[0]}:{yrange[1]}]")
-        gp(f"set format x '%.1f'")
-        gp(f"set format y '%.1f'")
+        gp(f"set format x '{precision}'")
+        gp(f"set format y '{precision}'")
 
         gp(f"set xlabel 'c_{{{rank1:d}}} (\305)'")
         gp(f"set ylabel 'c_{{{rank2:d}}} (\305)'")

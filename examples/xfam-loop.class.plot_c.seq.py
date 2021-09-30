@@ -43,7 +43,7 @@ len_seq = np.load(f"{job_name}.len_seq.npy")
 
 # Allow positive value that fits the distance in nature (optinal)...
 reverse_sign(u, vh, 1, index_from_zero = False)
-rev_list = [ ]
+rev_list = [3, 4]
 for rev_i in rev_list: reverse_sign(u, vh, rev_i, index_from_zero = False)
 
 # Calculate the weighted coefficients...
@@ -59,6 +59,8 @@ rotations = [
     [  3,  5, -43.4],
     [  5,  7,  43.4],
     [  8,  9,  43.4],
+    [  3,  4,  19.2],
+    [  2,  4,  13.4],
 ]
 for i, (x, y, _) in enumerate(rotations):
     if x in rev_list: rotations[i][2] *= -1
@@ -72,82 +74,107 @@ for rank1, rank2, theta in rotations:
 ## rank1_last, rank2_last = 3, 5
 
 
-# Create style dictionary based on different coloring purposes...
-# Register items from xlsx into coloritems
-coloritems = {}
 
-# Initialize an empty color table and plot statement...
-colors_dict = {}
-gps_dict    = {}
+# [[[ Plot style ]]]
+# Write this get_pointstyle function for different coloring purposes
+# The point is that each dot should be customizable
+# Delineate the input (degree of freedom) and output
+# f(cls, act, res) in this case that defines the look of a point
+# The following function illustrates the mapping, however, global variable 
+# can resolve some memory overhead.  So in practice, it's not wrapped in a 
+# function.  
+#
+# ```
+# def get_pointstyle(cls, act, res):
+#     ''' A style is defined by three variables: class, activation, resolution.
+#     '''
+#     # Color is defined by class...
+#     clr_dict = {
+#         "A (Rhodopsin)" : "#FFB8B8" ,   # Low key red
+#         "B1 (Secretin)" : "#00A600" ,
+#         "C (Glutamate)" : "#0080FF" ,
+#         "B2 (Adhesion)" : "gray"    ,
+#         "F (Frizzled)"  : "#AB00FF" ,
+#     }
+# 
+#     # Shape is defined by activation...
+#     shape_dict = {
+#         "Intermediate" : 8,
+#         "Inactive"     : 6,
+#         "Active"       : 2,
+#     }
+# 
+#     # Pointsize is defined by resolution...
+#     pointsize_dict = {
+#         "low" : 0.3,
+#         "hi"  : 1.0,
+#     }
+# 
+#     # Fetch values from the rules based on the input...
+#     clr       = clr_dict      [cls]
+#     shape     = shape_dict    [act]
+#     pointsize = pointsize_dict[res]
+# 
+#     cmd = f"u 1:2 w p pt {shape} pointsize {pointsize} lw 1.0 lc rgb '{clr}' notitle"
+# 
+#     return cmd
+# ```
 
-# Primarily hl by Classes...
-class_list = [
-                 "A (Rhodopsin)",
-                 "B1 (Secretin)",
-                 "B2 (Adhesion)",
-                 "C (Glutamate)",
-                 "F (Frizzled)",
-                 ## "D1 (Ste2-like fungal pheromone)",
-              ]
-class_list1 = {
+# Associate STYLE ELEMENT to ENTRY CHARACTERISTICS...
+# Color is defined by class
+clr_dict = {
     "A (Rhodopsin)" : "#FFB8B8" ,   # Low key red
     "B1 (Secretin)" : "#00A600" ,
     "C (Glutamate)" : "#0080FF" ,
-    "B2 (Adhesion)" : "gray"    ,
+    ## "B2 (Adhesion)" : "gray"    ,
     "F (Frizzled)"  : "#AB00FF" ,
 }
-## class_list1["A (Rhodopsin)"] = "#FFB8B8"    # Low key red
-## class_list1["B1 (Secretin)"] = "#00A600"
-## class_list1["C (Glutamate)"] = "#0080FF"
-## class_list1["B2 (Adhesion)"] = "gray"
-## class_list1["F (Frizzled)"] = "#AB00FF"
 
-## class_list1["B1 (Secretin)"] = "#E6E6E6"
-## class_list1["C (Glutamate)"] = "#E6E6E6"
-## class_list1["B2 (Adhesion)"] = "#E6E6E6"
-## class_list1["F (Frizzled)"]  = "#E6E6E6"
+# Shape is defined by activation
+shape_dict = {
+    "Intermediate" : 8,
+    "Inactive"     : 6,
+    "Active"       : 2,
+}
 
-# Filter line by the activation state "Inactive"...
-line_dict = {}
-state_dict = {
-                  "Inactive" : {"col" : 11, "shape" : 6, "lw" : 1},
-                  "Intermediate" : {"col" : 11, "shape" : 7, "lw" : 1, },
-                  "Active"   : {"col" : 11, "shape" : 2, "lw" : 1}
-                }
-is_exist_dict = {}
-hl_name = "Classes"
-for fil_name, attr_dict in state_dict.items():
-    color_key = f"{hl_name} {fil_name}"
-    col = attr_dict["col"]
-    shape = attr_dict["shape"]
-    lw = attr_dict["lw"]
-    line_dict[color_key] = { i : line for i, line in enumerate(lines) if line[11] == fil_name }
+# Pointsize is defined by resolution
+pointsize_dict = {
+    "low" : 0.3,
+    "hi"  : 1.0,
+}
+# Resolution cutoff...
+res_cutoff = 3.5
 
-    # States...
-    coloritems[color_key] = select_items(line_dict[color_key], 4)
-    colors_dict[color_key] = {**class_list1}
-    for k, v in colors_dict[color_key].items():
-        # Deal with wrongly-input receptor
-        if not k in coloritems[color_key]:
-            print(f"!!! {k} is not a valid record for coloring for style '{color_key}'.")
-            continue
+# Compose the plotting command based on style element
+def get_pointstyle(clr, shape, pointsize):
+    ''' A style is defined by three variables: class, activation, resolution.
+    '''
+    return f"u 1:2 w p pt {shape} pointsize {pointsize} lw 1.0 lc rgb '{clr}' notitle"
 
-        # Set title...
-        # Title will affect the making of key
-        ## t = f"title '{fil_name} {k}'" if k == "C (Glutamate)" or k == "F (Frizzled)" else f"title '{fil_name} Others'"
+# Plot style for each input...
+gps_dict = {}
+for i, line in enumerate(lines[:]):
+    pdb, chain = line[7], line[10]
 
-        t = f"title '{fil_name} {k}'"
+    # Fetch characteristics from each entry...
+    cls = line[4]
+    act = line[11]
+    res = float(line[9])
+    res_label = "hi" if res < res_cutoff else "low"
 
-        ## t = f"title '{k}'"
+    # Fetch style element from the rules based for this input...
+    # You don't have to plot every record in that column
+    if not cls in clr_dict            : continue
+    if not act in shape_dict          : continue
+    if not res_label in pointsize_dict: continue
+    clr       = clr_dict      [cls]
+    shape     = shape_dict    [act]
+    pointsize = pointsize_dict[res_label]
 
-        if not t in is_exist_dict: is_exist_dict[t] = None
-        else: t = "notitle"
-
-        # Construct plot commands for each entry
-        gps_dict[f"{color_key} {k}"] = {
-            "style" : f"u 1:2 w p pt {shape} ps 1.0 lw {lw} lc rgb '{v}' {t}",
-            "entry" : coloritems[color_key][k]
-        }
+    # Define the style for this input...
+    entry_name = f"{pdb}_{chain}"
+    gps_dict[entry_name] = { "style" : get_pointstyle(clr, shape, pointsize), 
+                             "entry" : [i] }
 
 ## gps_dict = {}
 
@@ -159,27 +186,6 @@ entry_dict = { f"{v[7]}_{v[10]}" : i for i, v in enumerate(lines) }
 
 # Selectively plot entries...
 pdb_list = [ 
-             "7M3E_B", "5OLV_A", "4GRV_A", "7BW0_R", "5T04_A", 
-             "1U19_A", "3CAP_A", "4WW3_A", "4ZUD_A", "6KPC_A",
-
-             "4XES_A",
-
-             "6S0L_A", 
-             ## "5IU4_A", "3RFM_A", "5K2A_A",
-
-             "2RH1_A",
-
-             "3QAK_A", ## "4UG2_A", 
-             "2YDO_A", 
-
-             "6GDG_A",
-
-             "6H7J_A",
-
-             "7CX2_R", "6N4B_R", 
-
-             "6WI9_R", "7CFN_R", "6XBM_R", "6D35_A", "5EE7_A",
-             "6KJV_B", "5NX2_A", "4QIM_A", "7D77_R",
            ]
 
 entry_fil_dict = { k : entry_dict[k] for k in pdb_list if k in entry_dict }
@@ -198,19 +204,19 @@ def run(rank1, rank2):
     cmds.append(f"set size ratio -1")
     return plot_coeff(c, rank1, rank2,
                       lbl = gps_dict,
-                      label = True, 
-                      ## label = False, 
+                      ## label = True, 
+                      label = False, 
                       label_dict = entry_fil_dict,
                       lbl_fontsize = 6,
 
-                      ## xrange = (-0.40, 0.50),
-                      ## yrange = (-0.22,-0.15),
+                      ## xrange = (-0.30,-0.20),
+                      ## yrange = (-0.20,-0.10),
 
                       offset = offset, 
                       rot = 0,
                       height = 2.873,
                       width = 2.873,
-                      fontsize = 14,
+                      fontsize = 12,
                       pointsize = 1.0,
                       linewidth = 1.0,
                       fl_path = fl_path,
@@ -267,7 +273,7 @@ if 1:
         top = 20 + 1
         job_rng = range(1, top)
         job_ids = filter(lambda x: x[0] < x[1], permutations(job_rng, 2))
-        num_job = 10
+        num_job = 4
         if __name__ == "__main__":
             with mp.Pool(num_job) as proc:
                 proc.starmap( run, job_ids )

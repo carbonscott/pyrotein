@@ -68,10 +68,40 @@ def load_gpcrdb_xlsx(fl_input, sheet = "Sheet1", splitchain = True):
         if splitchain:
             for eachchain in chain.split(): 
                 # Replace the chain column with a single chain identifier...
-                val[2] = eachchain
+                val[10] = eachchain
                 entries.append(val.copy())
         else:
             entries.append(val.copy())
+
+    return entries
+
+
+
+
+def load_md_xlsx(fl_input, sheet = "Sheet1"):
+    # Load the spreadsheet...
+    bk = openpyxl.load_workbook(fl_input, data_only = True)
+    st = bk[sheet]
+
+    # Fetch entries from the 2nd row...
+    entries = []
+    for i in st.iter_rows(min_row = 2):
+        # Unpack all values
+        val = [ j.value for j in i ]
+
+        # Stop iteration if row starts with None
+        if val[0] is None: break
+
+        # Unpack parameters
+        select, pdb, chain, frame_b, frame_e, frame_s = val[:6]
+
+        # Skip unselected...
+        if select == "no": 
+            print(f"{pdb}-{chain} is not selected.")
+            continue
+
+
+        entries.append(val.copy())
 
     return entries
 
