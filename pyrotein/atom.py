@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from .constants  import constant_atomlabel, constant_aminoacid_code
+from .constants  import constant_atomlabel, constant_aminoacid_code, constant_aminoacid_code_reverse
 from .utils import chunker, sort_dict_by_key
 from difflib import ndiff
 
@@ -173,7 +173,7 @@ def filter_by_resn(chain_dict, resn):
 def resi_to_resn(chain_dict):
     ''' Extract resn to resi mapping (like the sequence viewer on PyMol)
     '''
-    aa_dict = { v : k for k, v in constant_aminoacid_code().items() }
+    aa_dict = constant_aminoacid_code_reverse()
 
     resi_to_resn_dict = {}
     for resi, atom_dict in chain_dict.items():

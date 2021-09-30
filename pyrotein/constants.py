@@ -17,6 +17,16 @@ def constant_aminoacid_code():
 
 
 
+def constant_aminoacid_code_reverse():
+    aa_dict = { v : k for k, v in constant_aminoacid_code().items() }
+    ## aa_dict["HSD"] = "H"
+    ## aa_dict["CYSP"] = "C"
+
+    return aa_dict
+
+
+
+
 def constant_atomlabel():
     # MAR stands for missing-a-residue;
     # We consider MAR still has 4 placeholder atoms that form a backbone
