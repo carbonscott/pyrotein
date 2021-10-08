@@ -219,9 +219,11 @@ def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
     if lb_term == -1: 
         print(f"Illegal input sequence!!!")
         print(f"-------------------------")
-        print(f"seq in alignment file: {tar_seq[nseqi : cseqi + 1].replace('-', '')}")
+        ## print(f"seq in alignment file: {tar_seq[nseqi : cseqi + 1].replace('-', '')}")
+        print(f"seq in alignment file: {tar_seq_bound_continous}")
         print(f"-------------------------")
         print(f"seq in this pdb: {seq_orig}")
+        print(f"")
         return seqi_to_resi_dict
 
     # Obtain the ending index by the length of the coutinous (no '-') sequence...
