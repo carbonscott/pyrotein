@@ -3,7 +3,7 @@
 
 import numpy as np
 from .constants  import constant_atomlabel, constant_aminoacid_code, constant_aminoacid_code_reverse
-from .utils import chunker, sort_dict_by_key
+from .utils import sort_dict_by_key
 from difflib import ndiff
 
 ''' The program extracts atomic information from a truncated pdb file that is
@@ -219,8 +219,9 @@ def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
     if lb_term == -1: 
         print(f"Illegal input sequence!!!")
         print(f"-------------------------")
-        for s1, s2 in zip(chunker(tar_seq_bound_continous, 60), chunker(seq_orig, 60)):
-            for di, dv in enumerate(ndiff([s1], [s2])): print(dv)
+        print(f"seq in alignment: {tar_seq[nseqi : cseqi + 1].replace('-', '')}")
+        print(f"-------------------------")
+        print(f"seq in pdb: {seq_orig}")
         return seqi_to_resi_dict
 
     # Obtain the ending index by the length of the coutinous (no '-') sequence...

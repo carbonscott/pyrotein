@@ -49,6 +49,9 @@ def calc_rmsd_mats(mats):
 
 
 def calc_rmsd_array(ary):
+    ''' Example dimension: axis = 0
+        Feature dimension: axis = 1
+    '''
     ary_mean = np.nanmean( ary, axis = 0 )
 
     ary_diff = ary - ary_mean[np.newaxis, :]
