@@ -189,6 +189,34 @@ def resi_to_resn(chain_dict):
 
 
 
+def seqi_to_resi_debug(chain_dict, tar_seq, nseqi, cseqi):
+    ''' Map seqi to resi for the sequence tar_seq bound by nseqi and cseqi.
+
+        resi is infered by resi_to_resn_dict.  
+
+        Key step is to recognize the lower bound resi that corresponds to
+        nseqi.
+    '''
+    # Initialize mapping...
+    seqi_to_resi_dict = { k : None for k in range(nseqi, cseqi + 1) }
+
+    # Extract resn to resi mapping (like the sequence viewer on PyMol)...
+    # Non amino acid residue (like ligand) are bypassed
+    resi_to_resn_dict = resi_to_resn(chain_dict)
+
+    # Select the bound sequence by nseqi and cseqi...
+    tar_seq_bound           = tar_seq[nseqi : cseqi + 1]
+    tar_seq_bound_continous = tar_seq[nseqi : cseqi + 1].replace('-', '')
+
+    # Obtain the original sequence from PDB...
+    # May have overhead in the beginning or the end
+    seq_orig = ''.join([ v for v in resi_to_resn_dict.values() ])
+
+    return tar_seq_bound_continous, seq_orig
+
+
+
+
 def seqi_to_resi(chain_dict, tar_seq, nseqi, cseqi):
     ''' Map seqi to resi for the sequence tar_seq bound by nseqi and cseqi.
 
