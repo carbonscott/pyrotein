@@ -454,12 +454,14 @@ similarities.  How different are they?  In groups or just a few outliers.
 Does the sequence alignment make sense? (It doesn't do a good job for a minority
 of entries that have a long insertion.)  
 
+
+<!--
 About the quadratic mean (or room mean square)
 
-- RMS of `u = |u| / len(u)`
+- RMS of `u = |u| / sqrt(len(u))
 - `|u|` is root of squared sum, or `|u| = np.sqrt(np.dot(u, u.T))`.  
 - `|u| = 1` because SVD has normalized `u`.  
-- So `RMS(u) = 1 / len(u)`
+- So `RMS(u) = 1 / sqrt(len(u))
 - SVD breaks down `dmats.T` into `u`, `s`, and `vh`, the unit is carried by `s`.  
   ```
   c = RMS(u @ s, axis = 0) @ vh
@@ -472,3 +474,4 @@ About the quadratic mean (or room mean square)
                             |__ Apply the mean to scatter plot, the distance between two spots in the scatter plot is like the RMSD.
   ```
 - Equivalently, `c = RMS(u) * (s @ vh)`
+-->
